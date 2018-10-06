@@ -23,6 +23,7 @@ Imports:
   cli,
   glue,
   purrr,
+  readr,
   stringr,
   tibble,
   tidyr

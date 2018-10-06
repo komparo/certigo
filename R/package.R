@@ -9,6 +9,7 @@
 #' @import processx
 #' @import R6
 #' @import cli
+#' @import readr
 #' @importFrom glue glue
 #'
 #' @docType package
