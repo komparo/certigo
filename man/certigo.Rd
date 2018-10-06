@@ -4,7 +4,7 @@
 \name{certigo}
 \alias{certigo}
 \alias{certigo-package}
-\title{Certigo, an R package for continuous benchmarking}
+\title{Certigo: digest based workflow system}
 \description{
-Certigo, an R package for continuous benchmarking
+Certigo: digest based workflow system
 }

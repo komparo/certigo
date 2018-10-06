@@ -1,4 +1,4 @@
-#' Certigo, an R package for continuous benchmarking
+#' Certigo: digest based workflow system
 #'
 #' @import tibble
 #' @import dplyr
