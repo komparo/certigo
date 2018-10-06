@@ -1,9 +1,10 @@
 Package: certigo
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Digest based workflow system
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
+Authors@R: c(
+  person("Wouter", "Saelens", email = "wouter.saelens@ugent.be", role = c("aut", "cre"))
+  )
 Description: More about what it does (maybe more than one line)
     Use four spaces when indenting paragraphs within the Description.
 License: What license is it under?
@@ -17,6 +18,10 @@ Imports:
   ggplot2,
   processx,
   R6,
-  cli
+  cli,
+  glue,
+  purrr,
+  stringr,
+  tibble
 Suggests: 
     testthat
