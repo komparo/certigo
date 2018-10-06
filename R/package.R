@@ -1,4 +1,4 @@
-#' Komparo, an R package for continuous benchmarking
+#' Certigo, an R package for continuous benchmarking
 #'
 #' @import tibble
 #' @import dplyr
@@ -12,5 +12,5 @@
 #' @importFrom glue glue
 #'
 #' @docType package
-#' @name komparo
+#' @name certigo
 NULL
