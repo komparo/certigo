@@ -1,5 +1,7 @@
 #' Objects
 #'
+#' @param ... ...
+#'
 #' @rdname object
 
 Object <- R6Class("Object", public = list(

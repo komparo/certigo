@@ -13,8 +13,10 @@ LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 6.1.0
 Imports:
-  fs,
+  crayon,
   dplyr,
+  igraph,
+  fs,
   ggplot2,
   processx,
   R6,
@@ -22,6 +24,7 @@ Imports:
   glue,
   purrr,
   stringr,
-  tibble
+  tibble,
+  tidyr
 Suggests: 
     testthat
