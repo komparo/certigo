@@ -27,6 +27,9 @@ DockerContainer <- R6Class(
 
       process$stdout %>% trimws()
     }
+  ),
+  active = list(
+    label = function(...) fontawesome_map["box"]
   )
 )
 
@@ -40,6 +43,8 @@ File <- R6Class(
   inherit = Object,
   public = list(
     path = NULL,
+    last_change_time = NULL,
+    last_digest = NULL,
     file_required = TRUE,
     initialize = function(path) {
       self$path <- path
@@ -47,13 +52,31 @@ File <- R6Class(
       self$string <- path
     },
     digest = function() {
+      # check if file is present if required (eg. for raw files)
       if (self$file_required) {
         if (!file.exists(self$path)) {stop(glue::glue("{self$path} -> does not exist"))}
       } else {
         if (!file.exists(self$path)) {return(NA)}
       }
 
-      processx::run("md5sum", self$path)$stdout %>% gsub("([^ ]*).*", "\\1", .) %>% trimws()
+      # use change time to cache result
+      current_change_time <- fs::file_info(self$path)$change_time
+      if (is.null(self$last_change_time) || current_change_time > self$last_change_time) {
+        self$last_digest <- processx::run("md5sum", self$path)$stdout %>% gsub("([^ ]*).*", "\\1", .) %>% trimws()
+      }
+      self$last_change_time <- current_change_time
+      self$last_digest
+    }
+  ),
+  active = list(
+    label = function(...) {
+      case_when(
+        any(endsWith(self$path, c("png", "svg"))) ~ fontawesome_map["image"],
+        any(endsWith(self$path, c("tsv", "csv"))) ~ fontawesome_map["table"],
+        any(endsWith(self$path, c(".R"))) ~ paste0(fontawesome_map["code"]),
+        TRUE ~ fontawesome_map["file"]
+      )
+
     }
   )
 )

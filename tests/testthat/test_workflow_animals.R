@@ -3,6 +3,8 @@ library(fs)
 library(dplyr)
 library(readr)
 
+Sys.setenv(R_TESTS="")
+
 context("Testing workflow animals")
 
 # go to temporary directory and copy over all files
@@ -31,7 +33,7 @@ calls <- list(
 ) %>% process_calls_raw()
 
 
-if (Sys.getenv("R_TESTS") != "") {
+if (Sys.getenv("R_TESTS") == "") {
   expect_rerun(runs_exited <- run_calls(calls))
 
   test_that("Derived files are being created", {
@@ -81,11 +83,6 @@ if (Sys.getenv("R_TESTS") != "") {
 
     expect_rerun(runs_exited <- run_calls(calls, runs_exited))
   })
-
-
-  # write_rds(runs_exited, "runs_exited.rds")
-  # runs_exited <- read_rds("runs_exited.rds")
-
-  setwd(oldwd)
-
 }
+
+setwd(oldwd)

@@ -107,6 +107,10 @@ poll_runs <- function(runs_active) {
       digest = map(call, "digest") %>% invoke_map_chr()
     )
 
+  # cleanup all exited processes
+  runs_exited$process %>% map("kill_tree") %>% invoke_map()
+  runs_exited$process <- NULL
+
   # show messages on exited runs
   if (nrow(runs_exited) > 0) {
     pmap(runs_exited, function(id, output_status, process_status, ...) {

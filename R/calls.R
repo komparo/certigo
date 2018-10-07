@@ -17,7 +17,7 @@ Call <- R6Class(
     digest = function(input_digests = NULL) {
       stop("Digest not implemented for this call")
     },
-    input_status = function(waiting_input_ids) {
+    input_status = function(waiting_input_ids = character()) {
       input_digests <- self$inputs %>% map("digest") %>% invoke_map_chr()
       input_ids <- self$inputs %>% map_chr("id")
       case_when(
@@ -42,8 +42,11 @@ Call <- R6Class(
       }
     },
     run = function() {
-      process <- processx::process$new(self$command, self$args, stdout = "|", stderr = "|")
+      process <- processx::process$new(self$command, self$args, stdout = "|", stderr = "|", supervise = TRUE, cleanup_tree = TRUE)
     }
+  ),
+  active = list(
+    label = function(...) fontawesome_map["play"]
   )
 )
 
