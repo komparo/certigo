@@ -56,7 +56,7 @@ RscriptCall <- R6Class(
   "RscriptCall",
   inherit = Call,
   public = list(
-    command = paste0(Sys.getenv("R_HOME"), "/bin/Rscript"),
+    command = paste0(Sys.getenv("R_HOME"), "/bin/R"),
     initialize = function(id, script, inputs = list(), outputs = list()) {
       inputs <- c(list(script), inputs)
       super$initialize(id, inputs, outputs)
