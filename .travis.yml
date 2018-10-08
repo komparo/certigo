@@ -32,8 +32,13 @@ latex: false
 #env
 env:
   global:
-  - _R_CHECK_FORCE_SUGGESTS_=false
+  - _R_CHECK_FORCE_SUGGESTS_=true
   - MAKEFLAGS="-j 2"
 
 #services
 services:
+
+addons:
+  apt:
+    packages:
+      libudunits2-dev
