@@ -8,7 +8,7 @@ Object <- R6Class(
   "Object",
   public = list(
     id = NULL,
-    string = "",
+    string = NULL,
     status = function() {
       case_when(
         is.na(self$digest) ~ "not_present",
@@ -23,15 +23,15 @@ Object <- R6Class(
   )
 )
 
-DockerContainer <- R6Class(
-  "DockerContainer",
+Docker <- R6Class(
+  "Docker",
   inherit = Object,
   public = list(
     image = NULL,
     initialize = function(image) {
       self$image <- image
       self$id <- image
-      self$string <- path
+      self$string <- image
     }
   ),
   active = list(
@@ -47,7 +47,7 @@ DockerContainer <- R6Class(
 
 #' @rdname object
 #' @export
-docker_container <- DockerContainer$new
+docker <- Docker$new
 
 File <- R6Class(
   "File",

@@ -215,7 +215,7 @@ Workflow <- R6Class(
 
       # - available input and non-waiting input
       waiting_output_ids <- unlist(calls_ready$call %>% map(function(call) {map_chr(call$outputs, "id")}))
-      waiting_input_ids <- unname(unlist(self$object_dependencies[waiting_output_ids]))
+      waiting_input_ids <- unname(unlist(self$object_dependencies[waiting_output_ids])) %>% c(waiting_output_ids)
 
       calls_ready <- calls_ready %>%
         mutate(

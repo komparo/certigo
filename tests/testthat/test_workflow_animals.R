@@ -22,9 +22,9 @@ workflow <- Workflow$new(list(
     script_file("scripts/determine_animal_coolness.R"),
     outputs = list(derived_file("intermediate/animal_coolness.tsv"))
   ),
-  rscript_call(
+  docker_call(
     "plot_animal_coolness",
-    script_file("scripts/plot_animal_coolness.R"),
+    docker("certigo/plot_animal_coolness"),
     inputs = list(derived_file("intermediate/animal_coolness.tsv")),
     outputs = list(derived_file("results/animal_coolness.pdf"))
   ),
@@ -41,10 +41,10 @@ workflow <- Workflow$new(list(
     outputs = list(derived_file("results/animal_coolness_tests.pdf"))
   )
 ))
-
+#
 # workflow$run_calls()
-
-# workflow$runs_exited$stderr[3] %>% cat
+#
+# workflow$runs_exited$stderr %>% cat
 
 
 expect_rerun(workflow$run_calls())
@@ -86,11 +86,11 @@ test_that("When workflow changes, need to rerun", {
       script_file("scripts/determine_animal_coolness.R"),
       outputs = list(derived_file("derived/animal_coolness.tsv"))
     ),
-    rscript_call(
+    docker_call(
       "plot_animal_coolness",
-      script_file("scripts/plot_animal_coolness.R"),
-      inputs = list(derived_file("derived/animal_coolness.tsv")),
-      outputs = list(derived_file("derived/animal_coolness.png"))
+      docker("certigo/plot_animal_coolness"),
+      inputs = list(derived_file("intermediate/animal_coolness.tsv")),
+      outputs = list(derived_file("results/animal_coolness.pdf"))
     )
   ), runs_exited = workflow$runs_exited)
 

@@ -2,7 +2,7 @@
 
 export(Workflow)
 export(derived_file)
-export(docker_container)
+export(docker)
 export(raw_file)
 export(script_file)
 import(R6)

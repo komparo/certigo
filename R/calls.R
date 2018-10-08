@@ -52,6 +52,14 @@ Call <- R6Class(
 
 
 
+#   ____________________________________________________________________________
+#   R script                                                                ####
+
+deparse_friendly <- function(x) {
+  deparse(x, width.cutoff = 500) %>% glue::glue_collapse("")
+}
+
+
 RscriptCall <- R6Class(
   "RscriptCall",
   inherit = Call,
@@ -89,9 +97,41 @@ rscript_call <- RscriptCall$new
 
 
 
+#   ____________________________________________________________________________
+#   Docker                                                                  ####
 
+DockerCall <- R6Class(
+  "DockerCall",
+  inherit = Call,
+  public = list(
+    command = "docker",
+    initialize = function(id, container, inputs = list(), outputs = list()) {
+      super$initialize(id, c(list(container), inputs), outputs)
 
+      input_strings <- inputs %>% map_chr("string")
+      output_strings <- outputs %>% map_chr("string")
 
-deparse_friendly <- function(x) {
-  deparse(x, width.cutoff = 500) %>% glue::glue_collapse("")
-}
+      self$args <- c(
+        "run",
+        "-v", glue::glue("{fs::path_abs('.')}:/data"),
+        "-w", "/data",
+        container$string,
+        input_strings,
+        output_strings
+      )
+    }
+  ),
+  active = list(
+    digest = function() {
+      input_digests <- map(self$inputs, "digest")
+      output_digests <- map(self$outputs, "digest")
+      paste0(
+        "docker ",
+        glue::glue_collapse(input_digests, " "),
+        glue::glue_collapse(output_digests, " ")
+      )
+    }
+  )
+)
+
+docker_call <- DockerCall$new
