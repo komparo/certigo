@@ -44,6 +44,8 @@ workflow <- Workflow$new(list(
   )
 ))
 
+workflow$plot_workflow()
+
 
 if (Sys.getenv("R_TESTS") == "") {
   expect_rerun(workflow$run_calls())
@@ -94,6 +96,10 @@ if (Sys.getenv("R_TESTS") == "") {
     ), runs_exited = workflow$runs_exited)
 
     expect_rerun(workflow$run_calls())
+  })
+
+  test_that("Workflow can be plotted", {
+    expect_is(workflow$plot_workflow(), "ggplot")
   })
 }
 

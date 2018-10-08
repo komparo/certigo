@@ -5,5 +5,6 @@ fontawesome_map <- c(
   "box" = "\Uf466",
   "registered" = "\Uf25d",
   "image" = "\Uf03e",
-  "table" = "\Uf0ce"
+  "table" = "\Uf0ce",
+  "file-pdf" = "\Uf1c1"
 )

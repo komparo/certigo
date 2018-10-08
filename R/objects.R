@@ -82,6 +82,7 @@ File <- R6Class(
         any(endsWith(self$path, c("png", "svg"))) ~ fontawesome_map["image"],
         any(endsWith(self$path, c("tsv", "csv"))) ~ fontawesome_map["table"],
         any(endsWith(self$path, c(".R"))) ~ paste0(fontawesome_map["code"]),
+        any(endsWith(self$path, c(".pdf"))) ~ paste0(fontawesome_map["file-pdf"]),
         TRUE ~ fontawesome_map["file"]
       )
 
