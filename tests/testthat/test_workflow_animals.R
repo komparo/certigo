@@ -42,6 +42,10 @@ workflow <- Workflow$new(list(
   )
 ))
 
+# workflow$run_calls()
+
+# workflow$runs_exited$stderr[3] %>% cat
+
 
 expect_rerun(workflow$run_calls())
 

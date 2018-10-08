@@ -58,9 +58,18 @@ RscriptCall <- R6Class(
   public = list(
     command = paste0(Sys.getenv("R_HOME"), "/bin/R"),
     initialize = function(id, script, inputs = list(), outputs = list()) {
-      inputs <- c(list(script), inputs)
-      super$initialize(id, inputs, outputs)
-      self$args <- c(inputs %>% map_chr("string"), outputs %>% map_chr("string"))
+      super$initialize(id, c(list(script), inputs), outputs)
+
+      input_strings <- inputs %>% map_chr("string")
+      output_strings <- outputs %>% map_chr("string")
+
+      self$args <- c(
+        "-e",
+        glue::glue("inputs <- {deparse_friendly(input_strings)};outputs <- {deparse_friendly(output_strings)};source('{script$string}')")
+      )
+
+
+      # self$args <- c(, outputs %>% map_chr("string"))
     }
   ),
   active = list(
@@ -77,3 +86,12 @@ RscriptCall <- R6Class(
 )
 
 rscript_call <- RscriptCall$new
+
+
+
+
+
+
+deparse_friendly <- function(x) {
+  deparse(x, width.cutoff = 500) %>% glue::glue_collapse("")
+}
