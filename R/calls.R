@@ -15,25 +15,22 @@ Call <- R6Class(
       self$output_ids <- outputs %>% map_chr("id")
       self$objects <- c(inputs, outputs)
     },
-    digest = function(objects, input_digests = NULL) {
-      stop("Digest not implemented for this call")
-    },
     input_status = function(waiting_input_ids = character()) {
-      input_digests <- self$inputs %>% map("digest") %>% invoke_map_chr()
+      input_digests <- self$inputs %>% map_chr("digest")
       case_when(
         all(!is.na(input_digests)) && all(!self$input_ids %in% waiting_input_ids) ~ "ready",
         TRUE ~ "waiting"
       )
     },
     output_status = function() {
-      output_digests <- self$outputs %>% map("digest") %>% invoke_map_chr()
+      output_digests <- self$outputs %>% map_chr("digest")
       case_when(
         all(!is.na(output_digests)) ~ "present",
         TRUE ~ "not_present"
       )
     },
     call_status = function(runs_exited) {
-      digest <- self$digest()
+      digest <- self$digest
 
       if (digest %in% runs_exited$digest) {
         "finished"
@@ -46,7 +43,10 @@ Call <- R6Class(
     }
   ),
   active = list(
-    label = function(...) fontawesome_map["play"]
+    label = function(...) fontawesome_map["play"],
+    digest = function(objects, input_digests = NULL) {
+      stop("Digest not implemented for this call")
+    }
   )
 )
 
@@ -61,10 +61,12 @@ RscriptCall <- R6Class(
       inputs <- c(list(script), inputs)
       super$initialize(id, inputs, outputs)
       self$args <- c(inputs %>% map_chr("string"), outputs %>% map_chr("string"))
-    },
+    }
+  ),
+  active = list(
     digest = function() {
-      input_digests <- map(self$inputs, "digest") %>% invoke_map_chr()
-      output_digests <- map(self$outputs, "digest") %>% invoke_map_chr()
+      input_digests <- map(self$inputs, "digest")
+      output_digests <- map(self$outputs, "digest")
       paste0(
         "Rscript ",
         glue::glue_collapse(input_digests, " "),

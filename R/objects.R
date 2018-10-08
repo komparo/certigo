@@ -4,19 +4,24 @@
 #'
 #' @rdname object
 
-Object <- R6Class("Object", public = list(
-  id = NULL,
-  string = "",
-  digest = function() {
-    stop("Digest not implemented")
-  },
-  status = function() {
-    case_when(
-      is.na(self$digest()) ~ "not_present",
-      TRUE ~ "present"
-    )
-  }
-))
+Object <- R6Class(
+  "Object",
+  public = list(
+    id = NULL,
+    string = "",
+    status = function() {
+      case_when(
+        is.na(self$digest) ~ "not_present",
+        TRUE ~ "present"
+      )
+    }
+  ),
+  active = list(
+    digest = function() {
+      stop("Digest not implemented")
+    }
+  )
+)
 
 DockerContainer <- R6Class(
   "DockerContainer",
@@ -27,15 +32,15 @@ DockerContainer <- R6Class(
       self$image <- image
       self$id <- image
       self$string <- path
-    },
+    }
+  ),
+  active = list(
+    label = function(...) fontawesome_map["box"],
     digest = function() {
       process <- processx::run("docker", c("inspect", "--format={{.ID}}", self$image))
 
       process$stdout %>% trimws()
     }
-  ),
-  active = list(
-    label = function(...) fontawesome_map["box"]
   )
 )
 
@@ -58,8 +63,19 @@ File <- R6Class(
       self$string <- path
 
       dir_create(path_dir(path), recursive = TRUE)
+    }
+  ),
+  active = list(
+    label = function(...) {
+      case_when(
+        any(endsWith(self$path, c("png", "svg"))) ~ fontawesome_map["image"],
+        any(endsWith(self$path, c("tsv", "csv"))) ~ fontawesome_map["table"],
+        any(endsWith(self$path, c(".R"))) ~ paste0(fontawesome_map["code"]),
+        any(endsWith(self$path, c(".pdf"))) ~ paste0(fontawesome_map["file-pdf"]),
+        TRUE ~ fontawesome_map["file"]
+      )
     },
-    digest = function() {
+    digest = function(...) {
       # check if file is present if required (eg. for raw files)
       if (self$file_required) {
         if (!file.exists(self$path)) {stop(glue::glue("{self$path} -> does not exist"))}
@@ -74,18 +90,6 @@ File <- R6Class(
       }
       self$last_change_time <- current_change_time
       self$last_digest
-    }
-  ),
-  active = list(
-    label = function(...) {
-      case_when(
-        any(endsWith(self$path, c("png", "svg"))) ~ fontawesome_map["image"],
-        any(endsWith(self$path, c("tsv", "csv"))) ~ fontawesome_map["table"],
-        any(endsWith(self$path, c(".R"))) ~ paste0(fontawesome_map["code"]),
-        any(endsWith(self$path, c(".pdf"))) ~ paste0(fontawesome_map["file-pdf"]),
-        TRUE ~ fontawesome_map["file"]
-      )
-
     }
   )
 )

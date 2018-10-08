@@ -40,13 +40,18 @@ plot_workflow <- function() {
     sysfonts::font_add("fontawesome", system.file("fonts/fontawesome_5_solid.otf", package = "certigo"))
   }
 
-  # plot
+  # status colors
   status_colors <- c(finished = "#3D9970", present = "#2ECC40", not_present = "#FFDC00", unfinished = "#FF851B")
   scale_color_status <- scale_color_manual(values = status_colors, limits = names(status_colors))
 
+  # get layout
+  layout <- igraph::layout_with_sugiyama(workflow_graph)
+  workflow_graph <- workflow_graph %>%
+    mutate(x = layout$layout[, 1], y =  layout$layout[, 2])
+
   workflow_graph %>%
     mutate(label = label) %>%
-    ggraph::ggraph("sugiyama") +
+    ggraph::ggraph(x = workflow_graph$x, y = workflow_graph$y) +
     ggraph::geom_edge_fan(color = "lightgrey") +
     geom_label(mapping = aes(x = x, y = y, label = label, color = status), size = 5, family="fontawesome", label.size = 0) +
     geom_text(mapping = aes(x = x, y = y, label = name), color = "black", vjust = 2, size = 4) +
@@ -157,7 +162,7 @@ Workflow <- R6Class(
           stderr = map_chr(process, ~glue::glue_collapse(paste0("", .$read_all_error_lines()), "\n")),
           output_status = map(call, "output_status") %>% invoke_map_chr(),
           call_status = map(call, "call_status") %>% invoke_map_chr(runs_exited = self$runs_exited),
-          digest = map(call, "digest") %>% invoke_map_chr()
+          digest = map_chr(call, "digest")
         )
 
       # cleanup all exited processes
