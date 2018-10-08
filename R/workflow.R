@@ -1,7 +1,6 @@
 plot_workflow <- function() {
   requireNamespace("tidygraph")
   requireNamespace("ggraph")
-  requireNamespace("sysfonts")
 
   # create the links between objects and calls
   workflow_network <- self$calls %>% pmap_df(function(id, call, ...) {
@@ -36,9 +35,7 @@ plot_workflow <- function() {
     tidygraph::as_tbl_graph()
 
   # add fontawesome font if not available yet
-  if(!"fontawesome" %in% sysfonts::font_families()) {
-    sysfonts::font_add("fontawesome", system.file("fonts/fontawesome_5_solid.otf", package = "certigo"))
-  }
+  load_fontawesome()
 
   # status colors
   status_colors <- c(finished = "#3D9970", present = "#2ECC40", not_present = "#FFDC00", unfinished = "#FF851B")
@@ -53,7 +50,7 @@ plot_workflow <- function() {
     mutate(label = label) %>%
     ggraph::ggraph(x = workflow_graph$x, y = workflow_graph$y) +
     ggraph::geom_edge_fan(color = "lightgrey") +
-    geom_label(mapping = aes(x = x, y = y, label = label, color = status), size = 5, family="fontawesome", label.size = 0) +
+    geom_label(mapping = aes(x = x, y = y, label = label, color = status), size = 5, family="Font Awesome 5 Free", label.size = 0) +
     geom_text(mapping = aes(x = x, y = y, label = name), color = "black", vjust = 2, size = 4) +
     scale_x_continuous(expand = c(0.5, 0)) +
     scale_color_status +

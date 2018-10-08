@@ -31,6 +31,6 @@ Suggests:
     testthat,
     ggraph,
     tidygraph,
-    sysfonts
+    extrafont
 URL: https://github.com/komparo/certigo
 BugReports: https://github.com/komparo/certigo/issues
