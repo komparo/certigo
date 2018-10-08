@@ -45,8 +45,6 @@ workflow <- Workflow$new(list(
 
 expect_rerun(workflow$run_calls())
 
-write_rds(workflow$runs_exited, "~/sink2")
-
 test_that("Derived files are being created", {
   expect_true(file_exists("results/animal_coolness.pdf"))
   expect_true(file_exists("intermediate/animal_coolness.tsv"))
