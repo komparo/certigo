@@ -1,4 +1,4 @@
-#' Certigo, an R package for continuous benchmarking
+#' Certigo: digest based workflow system
 #'
 #' @import tibble
 #' @import dplyr
@@ -9,6 +9,7 @@
 #' @import processx
 #' @import R6
 #' @import cli
+#' @import readr
 #' @importFrom glue glue
 #'
 #' @docType package

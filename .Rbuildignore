@@ -1,2 +1,6 @@
+^LICENSE\.md$
+^tic\.R$
+^appveyor\.yml$
+^\.travis\.yml$
 ^.*\.Rproj$
 ^\.Rproj\.user$
