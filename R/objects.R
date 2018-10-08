@@ -9,6 +9,12 @@ Object <- R6Class("Object", public = list(
   string = "",
   digest = function() {
     stop("Digest not implemented")
+  },
+  status = function() {
+    case_when(
+      is.na(self$digest()) ~ "not_present",
+      TRUE ~ "present"
+    )
   }
 ))
 
@@ -50,6 +56,8 @@ File <- R6Class(
       self$path <- path
       self$id <- path
       self$string <- path
+
+      dir_create(path_dir(path), recursive = TRUE)
     },
     digest = function() {
       # check if file is present if required (eg. for raw files)
