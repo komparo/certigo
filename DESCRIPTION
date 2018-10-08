@@ -32,3 +32,5 @@ Suggests:
     ggraph,
     tidygraph,
     sysfonts
+URL: https://github.com/komparo/certigo
+BugReports: https://github.com/komparo/certigo/issues
