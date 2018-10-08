@@ -28,4 +28,7 @@ Imports:
   tibble,
   tidyr
 Suggests: 
-    testthat
+    testthat,
+    ggraph,
+    tidygraph,
+    sysfonts
