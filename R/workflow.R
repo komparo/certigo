@@ -123,8 +123,10 @@ Workflow <- R6Class(
 
       # start polling for whether the runs have exited
       while(nrow(self$runs_active) > 0) {
-        Sys.sleep(0.1)
+        # poll the processes using processx
+        processx::poll(self$runs_active$process, -1)
 
+        # get the exitted runs
         runs_exited_current <- self$poll()
 
         # when runs have exited, check whether new runs need to be started
