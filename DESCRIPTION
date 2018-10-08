@@ -3,7 +3,7 @@ Type: Package
 Title: Simple but Powerful Workflow Management System
 Version: 0.1.0
 Authors@R: c(
-  person("Wouter", "Saelens", email = "wouter.saelens@ugent.be", role = c("aut", "cre"))
+    person("Wouter", "Saelens", email = "wouter.saelens@ugent.be", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-7114-6248"))
   )
 Description: More about what it does (maybe more than one line)
     Use four spaces when indenting paragraphs within the Description.
