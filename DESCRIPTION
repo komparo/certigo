@@ -1,6 +1,6 @@
 Package: certigo
 Type: Package
-Title: Digest based workflow system
+Title: Simple but Powerful Workflow Management System
 Version: 0.1.0
 Authors@R: c(
   person("Wouter", "Saelens", email = "wouter.saelens@ugent.be", role = c("aut", "cre"))
