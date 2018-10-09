@@ -12,11 +12,12 @@ dir.create(tempdir)
 dir_copy(system.file("testdata/workflow_animals", package = "certigo"), tempdir)
 setwd(paste0(tempdir, "/workflow_animals"))
 
-expect_rerun <- function(x) {expect_output(x, "^.*\n.*$", info = "Expected a rerun")}
-expect_norerun <- function(x) {expect_output(x, "^[^\n]*$", info = "Expected a no rerun")}
-
 # build the docker image
 system(glue::glue("docker build -t certigo/plot_animal_coolness {system.file('testdata/workflow_animals/containers/plot_animal_coolness/', package = 'certigo')}"))
+
+# some testing functions
+expect_rerun <- function(x) {expect_output(x, "^.*\n.*$", info = "Expected a rerun")}
+expect_norerun <- function(x) {expect_output(x, "^[^\n]*$", info = "Expected a no rerun")}
 
 # build initial workflow
 workflow <- Workflow$new(list(
