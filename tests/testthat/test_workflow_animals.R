@@ -13,7 +13,7 @@ dir_copy(system.file("testdata/workflow_animals", package = "certigo"), tempdir)
 setwd(paste0(tempdir, "/workflow_animals"))
 
 # build the docker image
-system(glue::glue("docker build -t certigo/plot_animal_coolness {system.file('testdata/workflow_animals/containers/plot_animal_coolness/', package = 'certigo')}"))
+processx::run("docker", c("build", "-t", "certigo/plot_animal_coolness", system.file('testdata/workflow_animals/containers/plot_animal_coolness/', package = 'certigo')))
 
 # some testing functions
 expect_rerun <- function(x) {expect_output(x, "^.*\n.*$", info = "Expected a rerun")}
@@ -45,11 +45,6 @@ workflow <- Workflow$new(list(
     outputs = list(derived_file("results/animal_coolness_tests.pdf"))
   )
 ))
-#
-# workflow$run_calls()
-#
-# workflow$runs_exited$stderr %>% cat
-
 
 expect_rerun(workflow$run_calls())
 

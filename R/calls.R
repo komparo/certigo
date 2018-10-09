@@ -75,9 +75,10 @@ RscriptCall <- R6Class(
         "-e",
         glue::glue("inputs <- {deparse_friendly(input_strings)};outputs <- {deparse_friendly(output_strings)};source('{script$string}')")
       )
-
-
-      # self$args <- c(, outputs %>% map_chr("string"))
+    },
+    debug = function() {
+      clipr::write_clip(self$args[[2]])
+      message("Inputs and outputs written to clipboard")
     }
   ),
   active = list(

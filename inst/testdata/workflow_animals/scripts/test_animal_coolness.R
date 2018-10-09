@@ -5,8 +5,8 @@ library(tidyr)
 animal_coolness <- readr::read_tsv(inputs[1])
 
 animal_coolness_tests <- crossing(
-  from = animal_coolness$id,
-  to = animal_coolness$id
+  from = animal_coolness$animal,
+  to = animal_coolness$animal
 ) %>%
   mutate(
     p_value = runif(n())
