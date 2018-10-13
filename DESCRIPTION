@@ -16,6 +16,7 @@ Imports:
   crayon,
   dplyr,
   igraph,
+  jsonlite,
   fs,
   ggplot2,
   processx,
