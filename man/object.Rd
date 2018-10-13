@@ -7,6 +7,7 @@
 \alias{derived_file}
 \alias{raw_file}
 \alias{script_file}
+\alias{parameters}
 \title{Objects}
 \format{An object of class \code{R6ClassGenerator} of length 24.}
 \usage{
@@ -19,6 +20,8 @@ derived_file(...)
 raw_file(...)
 
 script_file(...)
+
+parameters(...)
 }
 \arguments{
 \item{...}{...}

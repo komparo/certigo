@@ -2,11 +2,13 @@ library(testthat)
 library(fs)
 library(dplyr)
 library(readr)
+library(purrr)
 
 context("Testing workflow animals")
 
 # go to temporary directory and copy over all files
 oldwd <- getwd()
+on.exit({setwd(oldwd)})
 tempdir <- tempfile()
 dir.create(tempdir)
 dir_copy(system.file("testdata/workflow_animals", package = "certigo"), tempdir)
@@ -16,88 +18,64 @@ setwd(paste0(tempdir, "/workflow_animals"))
 processx::run("docker", c("build", "-t", "certigo/plot_animal_coolness", system.file('testdata/workflow_animals/containers/plot_animal_coolness/', package = 'certigo')))
 
 # some testing functions
-expect_rerun <- function(x) {expect_output(x, "^.*\n.*$", info = "Expected a rerun")}
-expect_norerun <- function(x) {expect_output(x, "^[^\n]*$", info = "Expected a no rerun")}
+expect_rerun <- function(x) {expect_output(x, "^.*Finished$", info = "Expected a rerun")}
+expect_cached <- function(x) {expect_output(x, "^.*Cached$", info = "Expected a cached")}
 
-# build initial workflow
-workflow <- Workflow$new(list(
-  rscript_call(
-    "determine_animal_coolness",
-    script_file("scripts/determine_animal_coolness.R"),
-    outputs = list(derived_file("intermediate/animal_coolness.tsv"))
-  ),
-  docker_call(
-    "plot_animal_coolness",
-    docker("certigo/plot_animal_coolness"),
-    inputs = list(derived_file("intermediate/animal_coolness.tsv")),
-    outputs = list(derived_file("results/animal_coolness.pdf"))
-  ),
-  rscript_call(
-    "test_animal_coolness",
-    script_file("scripts/test_animal_coolness.R"),
-    inputs = list(derived_file("intermediate/animal_coolness.tsv")),
-    outputs = list(derived_file("intermediate/animal_coolness_tests.csv"))
-  ),
-  rscript_call(
-    "plot_animal_coolness_tests",
-    script_file("scripts/plot_animal_coolness_tests.R"),
-    inputs = list(derived_file("intermediate/animal_coolness.tsv"), derived_file("intermediate/animal_coolness_tests.csv")),
-    outputs = list(derived_file("results/animal_coolness_tests.pdf"))
-  )
-))
+# dir_delete("derived")
+# file_delete(dir_ls(".", recursive = TRUE, glob = "*.history", all = TRUE))
 
-expect_rerun(workflow$run_calls())
+determine_animal_coolness <- rscript_call(
+  "determine_animal_coolness",
+  script_file("scripts/determine_animal_coolness.R"),
+  outputs = list(derived_file("derived/animal_coolness.tsv"))
+)
 
-test_that("Derived files are being created", {
-  expect_true(file_exists("results/animal_coolness.pdf"))
-  expect_true(file_exists("intermediate/animal_coolness.tsv"))
-})
+expect_rerun(determine_animal_coolness$run())
 
-test_that("Nothing gets rerun when rerunning with runs_exited", {
-  expect_norerun(workflow$run_calls())
-})
+# cached
+expect_cached(determine_animal_coolness$run())
 
-test_that("When previously output dissapears or changes, need to rerun", {
-  file_delete("results/animal_coolness.pdf")
-  expect_rerun(workflow$run_calls())
-  expect_true(file_exists("results/animal_coolness.pdf"))
+# deleted output -> rerun
+determine_animal_coolness$outputs[[1]]$delete()
+expect_rerun(determine_animal_coolness$run())
 
-  file_move("results/animal_coolness.pdf", "results/animal_coolness.png")
-  expect_rerun(workflow$run_calls())
-  expect_true(file_exists("results/animal_coolness.pdf"))
-})
+# test docker call
+plot_animal_coolness <- docker_call(
+  "plot_animal_coolness",
+  docker("certigo/plot_animal_coolness"),
+  inputs = list(derived_file("derived/animal_coolness.tsv")),
+  outputs = list(derived_file("results/animal_coolness.pdf"))
+)
 
-test_that("When an input or dissapears changes, need to rerun", {
-  read_file("scripts/determine_animal_coolness.R") %>% gsub("dog", "giraffe", .) %>% write_file("scripts/determine_animal_coolness.R")
-  expect_rerun(workflow$run_calls())
+expect_rerun(plot_animal_coolness$run())
+expect_true(file_exists(plot_animal_coolness$outputs[[1]]$string))
 
-  file_delete("intermediate/animal_coolness.tsv")
-  expect_rerun(workflow$run_calls())
+# no input -> error + deleted output
+determine_animal_coolness$outputs[[1]]$delete()
+expect_error(plot_animal_coolness$run())
+expect_false(file_exists(plot_animal_coolness$outputs[[1]]$string))
 
-  read_file("intermediate/animal_coolness.tsv") %>% gsub("cat", "meow", .) %>% write_file("intermediate/animal_coolness.tsv")
-  expect_rerun(workflow$run_calls())
-})
+# input -> rerun
+determine_animal_coolness$run()
+expect_rerun(plot_animal_coolness$run())
 
-test_that("When workflow changes, need to rerun", {
-  workflow <- Workflow$new(list(
-    rscript_call(
-      "determine_animal_coolness",
-      script_file("scripts/determine_animal_coolness.R"),
-      outputs = list(derived_file("derived/animal_coolness.tsv"))
-    ),
-    docker_call(
-      "plot_animal_coolness",
-      docker("certigo/plot_animal_coolness"),
-      inputs = list(derived_file("intermediate/animal_coolness.tsv")),
-      outputs = list(derived_file("results/animal_coolness.pdf"))
-    )
-  ), runs_exited = workflow$runs_exited)
+# test some other calls
+test_animal_coolness <- rscript_call(
+  "test_animal_coolness",
+  script_file("scripts/test_animal_coolness.R"),
+  inputs = list(derived_file("derived/animal_coolness.tsv")),
+  outputs = list(derived_file("derived/animal_coolness_tests.csv"))
+)
 
-  expect_rerun(workflow$run_calls())
-})
+expect_rerun(test_animal_coolness$run())
 
-test_that("Workflow can be plotted", {
-  expect_is(workflow$plot_workflow(), "ggplot")
-})
+plot_animal_coolness_tests <- rscript_call(
+  "plot_animal_coolness_tests",
+  script_file("scripts/plot_animal_coolness_tests.R"),
+  inputs = list(derived_file("derived/animal_coolness.tsv"), derived_file("derived/animal_coolness_tests.csv")),
+  outputs = list(derived_file("results/animal_coolness_tests.pdf"))
+)
+
+expect_rerun(plot_animal_coolness_tests$run())
 
 setwd(oldwd)

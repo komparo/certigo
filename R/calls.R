@@ -3,48 +3,86 @@ Call <- R6Class(
   inherit = Object,
   public = list(
     command = NULL,
-    input_ids = list(),
-    output_ids = list(),
     inputs = list(),
     outputs = list(),
-    objects = list(),
     args = character(),
+    process = NULL,
     initialize = function(id, inputs, outputs) {
       self$id <- id
-      self$input_ids <- inputs %>% map_chr("id")
-      self$output_ids <- outputs %>% map_chr("id")
-      self$objects <- c(inputs, outputs)
+      self$inputs <- inputs
+      self$outputs <- outputs
     },
-    input_status = function(waiting_input_ids = character()) {
-      input_digests <- self$inputs %>% map_chr("digest")
-      case_when(
-        all(!is.na(input_digests)) && all(!self$input_ids %in% waiting_input_ids) ~ "ready",
-        TRUE ~ "waiting"
-      )
-    },
-    output_status = function() {
-      output_digests <- self$outputs %>% map_chr("digest")
-      case_when(
-        all(!is.na(output_digests)) ~ "present",
-        TRUE ~ "not_present"
-      )
-    },
-    call_status = function(runs_exited) {
-      digest <- self$digest
+    call = function(wait = FALSE) {
+      # make sure all inputs are present
+      existing_input <- map_lgl(self$inputs, function(input) {
+        if (TRUE && !input$exists) {
+          cat_line(col_split(self$id, crayon_error("\U274C Input does not exist: ", input$id)))
+          FALSE
+        } else {
+          TRUE
+        }
+      })
 
-      if (digest %in% runs_exited$digest) {
-        "finished"
+      if (any(!existing_input)) {
+        map(self$outputs, "delete") %>% invoke_map()
+        stop(col_split(self$id, crayon_error("\U274C Input ")), call. = FALSE)
+      }
+
+      # check whether all call_digests of the outputs match with the current output digest
+      output_call_digests <- map_chr(self$outputs, "call_digest")
+      call_digest <- self$digest
+
+      if(all(!is.na(output_call_digests)) && all(output_call_digests == call_digest)) {
+        cat_line(col_split(self$id, crayon::green("\U23F0 Cached")))
+        self$process <- NULL
       } else {
-        "unfinished"
+        self$process <- processx::process$new(
+          self$command,
+          self$args,
+          stdout = "|",
+          stderr = "|",
+          supervise = TRUE,
+          cleanup_tree = TRUE
+        )
       }
     },
     run = function() {
-      process <- processx::process$new(self$command, self$args, stdout = "|", stderr = "|", supervise = TRUE, cleanup_tree = TRUE)
+      self$call()
+      self$wait()
+    },
+    wait = function() {
+      if (!is.null(self$process)) {
+        self$process$wait()
+
+        cat_line(col_split(self$id, crayon_ok("\U2714 Finished")))
+
+        # check whether output is present
+        existing_output <- map_lgl(self$outputs, function(output) {
+          if (TRUE && !output$exists) {
+            cat_line(col_split(self$id, crayon_error("\U274C Output does not exist: ", output$id)))
+            FALSE
+          } else {
+            TRUE
+          }
+        })
+
+        # if some output is not present, error
+        if (any(!existing_output)) {
+          cat_line(col_split(self$id, crayon_error("\U274C Output")))
+          map(self$outputs, "delete") %>% invoke_map()
+          stop()
+        }
+
+        # write all output histories including the digest of the call
+        walk(self$outputs, function(output) {
+          output$write_history(call_digest = self$digest)
+        })
+      }
     }
   ),
   active = list(
     label = function(...) fontawesome_map["play"],
-    digest = function(objects, input_digests = NULL) {
+    digest = function() {
       stop("Digest not implemented for this call")
     }
   )
@@ -84,11 +122,12 @@ RscriptCall <- R6Class(
   active = list(
     digest = function() {
       input_digests <- map(self$inputs, "digest")
-      output_digests <- map(self$outputs, "digest")
+      output_strings <- map(self$outputs, "string")
       paste0(
         "Rscript ",
         glue::glue_collapse(input_digests, " "),
-        glue::glue_collapse(output_digests, " ")
+        " ",
+        glue::glue_collapse(output_strings, " ")
       )
     }
   )
@@ -125,11 +164,12 @@ DockerCall <- R6Class(
   active = list(
     digest = function() {
       input_digests <- map(self$inputs, "digest")
-      output_digests <- map(self$outputs, "digest")
+      output_strings <- map(self$outputs, "string")
       paste0(
         "docker ",
         glue::glue_collapse(input_digests, " "),
-        glue::glue_collapse(output_digests, " ")
+        " ",
+        glue::glue_collapse(output_strings, " ")
       )
     }
   )
