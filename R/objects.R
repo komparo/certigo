@@ -219,7 +219,7 @@ Parameters <- R6Class(
       self$parameters <- parameters
       self$id <- digest <- self$digest
 
-      parameters_file <- paste0("./tmp/", digest)
+      parameters_file <- paste0("./.certigo/parameters/", digest)
       if (!file.exists(parameters_file)) {
         dir_create(path_dir(parameters_file), recursive = TRUE)
         jsonlite::write_json(parameters, parameters_file)
