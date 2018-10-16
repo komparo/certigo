@@ -127,7 +127,7 @@ RscriptCall <- R6Class(
 
       self$args <- c(
         "-e",
-        glue::glue("inputs <- {deparse_friendly(input_strings)};outputs <- {deparse_friendly(output_strings)};source('{script$string}')")
+        glue::glue("inputs <- {deparse_friendly(input_strings)};outputs <- {deparse_friendly(output_strings)};pdf(NULL);source('{script$string}')")
       )
     },
     debug = function() {
