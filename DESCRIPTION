@@ -14,17 +14,18 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 6.1.0
 Imports:
   crayon,
+  cli,
   dplyr,
   igraph,
   jsonlite,
   fs,
-  ggplot2,
-  processx,
-  R6,
-  cli,
   glue,
+  ggplot2,
+  R6,
+  processx,
   purrr,
   readr,
+  rlang,
   stringr,
   tibble,
   tidyr

@@ -32,17 +32,17 @@ calls_factory <- function(class) {
       design$id <- label_design(id, design)
       testthat::expect_true(!any(duplicated(design$id)))
 
+      argument_expressions <- rlang::exprs(...)
+
       # create individual calls by evaluating the ... inside the environment of a row in the design tibble
-      calls <- dynutils::mapdf(design, function(design_row) {
-        argument_expressions <- rlang::exprs(...)
+      calls <- pmap(design, function(...) {
+        design_row <- list(...)
 
         # evaluate the arguments for this design row
         arguments <- purrr::map(argument_expressions, rlang::eval_tidy, design_row)
 
-        # create an extra input from the design
+        # create an extra input which includes the design
         design_parameters <- parameters(design_row)
-
-        # add design row to inputs
         if ("inputs" %in% arguments) {
           arguments$inputs <- c(arguments$inputs, list(design = design_parameters))
         } else {
