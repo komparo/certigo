@@ -69,6 +69,7 @@ Call <- R6Class(
           cat_line(col_split(self$id, crayon_ok("\U2714 Finished")))
         } else {
           cat_line(col_split(self$id, crayon_error("\U274C Errored")))
+          cat_line(self$process$get_error_lines() %>% tail(5))
         }
 
         # check whether output is present
