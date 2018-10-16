@@ -87,13 +87,13 @@ test_animal_cuteness <- rscript_call(
 
 expect_rerun(test_animal_cuteness$run())
 
-plot_animal_cuteness_tests <- rscript_call(
-  "plot_animal_cuteness_tests",
-  script_file("scripts/plot_animal_cuteness_tests.R"),
-  inputs = list(derived_file("derived/animal_cuteness.csv"), derived_file("derived/animal_cuteness_tests.csv")),
-  outputs = list(derived_file("results/animal_cuteness_tests.pdf"))
-)
-
-expect_rerun(plot_animal_cuteness_tests$run())
+# plot_animal_cuteness_tests <- rscript_call(
+#   "plot_animal_cuteness_tests",
+#   script_file("scripts/plot_animal_cuteness_tests.R"),
+#   inputs = list(derived_file("derived/animal_cuteness.csv"), derived_file("derived/animal_cuteness_tests.csv")),
+#   outputs = list(derived_file("results/animal_cuteness_tests.pdf"))
+# )
+#
+# expect_rerun(plot_animal_cuteness_tests$run())
 
 setwd(oldwd)
