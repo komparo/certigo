@@ -1,7 +1,7 @@
 Call <- R6Class(
   "Call",
-  inherit = Object,
   public = list(
+    id = NULL,
     command = NULL,
     inputs = list(),
     outputs = list(),
@@ -9,6 +9,10 @@ Call <- R6Class(
     process = NULL,
     initialize = function(id, inputs, outputs) {
       self$id <- id
+
+      testthat::expect_true(all(map_lgl(inputs, ~"Object" %in% class(.))), "All inputs should be an object")
+      testthat::expect_true(all(map_lgl(outputs, ~"Object" %in% class(.))), "All outputs should be an object")
+
       self$inputs <- inputs
       self$outputs <- outputs
     },
@@ -33,9 +37,10 @@ Call <- R6Class(
       call_digest <- self$digest
 
       if(all(!is.na(output_call_digests)) && all(output_call_digests == call_digest)) {
-        cat_line(col_split(self$id, crayon::green("\U23F0 Cached")))
+        cat_line(col_split(self$id, crayon_ok("\U23F0 Cached")))
         self$process <- NULL
       } else {
+        cat_line(col_split(self$id, crayon_info("\U25BA Started")))
         self$process <- processx::process$new(
           self$command,
           self$args,
@@ -54,7 +59,11 @@ Call <- R6Class(
       if (!is.null(self$process)) {
         self$process$wait()
 
-        cat_line(col_split(self$id, crayon_ok("\U2714 Finished")))
+        if (self$process$get_exit_status() == 0) {
+          cat_line(col_split(self$id, crayon_ok("\U2714 Finished")))
+        } else {
+          cat_line(col_split(self$id, crayon_error("\U274C Errored")))
+        }
 
         # check whether output is present
         existing_output <- map_lgl(self$outputs, function(output) {
@@ -133,7 +142,8 @@ RscriptCall <- R6Class(
   )
 )
 
-rscript_call <- RscriptCall$new
+#' @export
+rscript_call <- calls_factory(RscriptCall)
 
 
 
@@ -175,4 +185,5 @@ DockerCall <- R6Class(
   )
 )
 
-docker_call <- DockerCall$new
+#' @export
+docker_call <- calls_factory(DockerCall)

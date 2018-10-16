@@ -2,7 +2,7 @@ library(tibble)
 library(dplyr)
 library(tidyr)
 
-animal_cuteness <- readr::read_tsv(inputs[1])
+animal_cuteness <- readr::read_csv(inputs[1])
 
 animal_cuteness_tests <- crossing(
   from = animal_cuteness$animal,

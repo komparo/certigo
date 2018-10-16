@@ -5,3 +5,4 @@ col_split <- function(begin, end, middle = " | ", width_begin = 25) {
 crayon_warning <- crayon::make_style("orange")
 crayon_ok <- crayon::make_style("green")
 crayon_error <- crayon::make_style("red")
+crayon_info <- crayon::make_style("blue")

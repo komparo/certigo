@@ -9,13 +9,7 @@ Object <- R6Class(
   public = list(
     id = NULL,
     string = NULL,
-    history = NULL,
-    status = function() {
-      case_when(
-        is.na(self$digest) ~ "not_present",
-        TRUE ~ "present"
-      )
-    }
+    history = NULL
   ),
   active = list(
     digest = function() {
@@ -78,10 +72,7 @@ File <- R6Class(
       self$id <- path
       self$string <- path
 
-      # create directory for file if it does not exist
-      if (!dir_exists(path_dir(path))) {
-        dir_create(path_dir(path), recursive = TRUE)
-      }
+      dir_create(path_dir(path), recursive = TRUE)
     },
     read_history = function() {
       jsonlite::read_json(history_path(self$path), simplifyVector = TRUE)
@@ -220,11 +211,17 @@ Parameters <- R6Class(
   public = list(
     parameters = NULL,
     initialize = function(parameters) {
+      # sort if named, so that even when the order changes, the hash will stay the same
+      if(!is.null(names(parameters))) {
+        parameters <- parameters[sort(names(parameters))]
+      }
+
       self$parameters <- parameters
       self$id <- digest <- self$digest
 
       parameters_file <- paste0("./tmp/", digest)
       if (!file.exists(parameters_file)) {
+        dir_create(path_dir(parameters_file), recursive = TRUE)
         jsonlite::write_json(parameters, parameters_file)
       }
       self$string <- parameters_file
@@ -233,7 +230,8 @@ Parameters <- R6Class(
   active = list(
     digest = function(...) {
       digest::digest(self$parameters, algo = "md5")
-    }
+    },
+    exists = function(...) TRUE
   )
 )
 

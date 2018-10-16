@@ -2,8 +2,10 @@
 
 export(derived_file)
 export(docker)
+export(docker_call)
 export(parameters)
 export(raw_file)
+export(rscript_call)
 export(script_file)
 import(R6)
 import(cli)
