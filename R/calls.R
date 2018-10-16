@@ -1,3 +1,9 @@
+#' A call
+#'
+#' @param id The name of the call
+#' @param ... Extra arguments to the call, such as inputs, outputs, script, ...
+#' @param design A dataframe containing the information for each call in a separate row
+#' @rdname call
 Call <- R6Class(
   "Call",
   public = list(
@@ -143,6 +149,7 @@ RscriptCall <- R6Class(
 )
 
 #' @export
+#' @rdname call
 rscript_call <- calls_factory(RscriptCall)
 
 
@@ -186,4 +193,5 @@ DockerCall <- R6Class(
 )
 
 #' @export
+#' @rdname call
 docker_call <- calls_factory(DockerCall)
