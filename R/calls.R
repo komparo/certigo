@@ -8,21 +8,23 @@ Call <- R6Class(
   "Call",
   public = list(
     id = NULL,
+    inputs = NULL,
+    outputs = NULL,
+    executor = NULL,
     command = NULL,
-    inputs = list(),
-    outputs = list(),
-    args = character(),
-    process = NULL,
-    initialize = function(id, inputs, outputs) {
+    args = NULL,
+    initialize = function(id, inputs, outputs, executor = local_executor()) {
       self$id <- id
 
-      testthat::expect_true(all(map_lgl(inputs, ~"Object" %in% class(.))), "All inputs should be an object")
-      testthat::expect_true(all(map_lgl(outputs, ~"Object" %in% class(.))), "All outputs should be an object")
+      testthat::expect_true(all(map_lgl(inputs, ~"Object" %in% class(.))), "All inputs should be an Object")
+      testthat::expect_true(all(map_lgl(outputs, ~"Object" %in% class(.))), "All outputs should be an Object")
+      testthat::expect_true("Executor" %in% class(executor), "The executor should be an Executor")
 
+      self$executor <- executor
       self$inputs <- inputs
       self$outputs <- outputs
     },
-    call = function(wait = FALSE) {
+    start = function() {
       # make sure all inputs are present
       existing_input <- map_lgl(self$inputs, function(input) {
         if (TRUE && !input$exists) {
@@ -42,58 +44,55 @@ Call <- R6Class(
       output_call_digests <- map_chr(self$outputs, "call_digest")
       call_digest <- self$digest
 
+      # choose between cached or actual execution
       if(all(!is.na(output_call_digests)) && all(output_call_digests == call_digest)) {
+        # cached
         cat_line(col_split(self$id, crayon_ok("\U23F0 Cached")))
-        self$process <- NULL
       } else {
+        # start the executor
+        self$executor$start(self$command, self$args)
         cat_line(col_split(self$id, crayon_info("\U25BA Started")))
-        self$process <- processx::process$new(
-          self$command,
-          self$args,
-          stdout = "|",
-          stderr = "|",
-          supervise = TRUE,
-          cleanup_tree = TRUE
-        )
       }
     },
-    run = function() {
-      self$call()
+    start_and_wait = function() {
+      self$start()
       self$wait()
     },
     wait = function() {
-      if (!is.null(self$process)) {
-        self$process$wait()
+      self$executor$wait()
 
-        if (self$process$get_exit_status() == 0) {
-          cat_line(col_split(self$id, crayon_ok("\U2714 Finished")))
-        } else {
-          cat_line(col_split(self$id, crayon_error("\U274C Errored")))
-          cat_line(self$process$read_all_error_lines() %>% tail(5))
-        }
-
-        # check whether output is present
-        existing_output <- map_lgl(self$outputs, function(output) {
-          if (TRUE && !output$exists) {
-            cat_line(col_split(self$id, crayon_error("\U274C Output does not exist: ", output$id)))
-            FALSE
-          } else {
-            TRUE
-          }
-        })
-
-        # if some output is not present, error
-        if (any(!existing_output)) {
-          cat_line(col_split(self$id, crayon_error("\U274C Output")))
-          map(self$outputs, "delete") %>% invoke_map()
-          stop()
-        }
-
-        # write all output histories including the digest of the call
-        walk(self$outputs, function(output) {
-          output$write_history(call_digest = self$digest)
-        })
+      if (self$executor$status %in% c("success")) {
+        cat_line(col_split(self$id, crayon_ok("\U2714 Finished")))
+      } else if (self$executor$status %in% c("errored")) {
+        cat_line(col_split(self$id, crayon_error("\U274C Errored")))
+        map(self$outputs, "delete") %>% invoke_map()
+        cat_line(self$executor$error %>% tail(5))
       }
+
+      # check whether output is present
+      existing_output <- map_lgl(self$outputs, function(output) {
+        if (TRUE && !output$exists) {
+          cat_line(col_split(self$id, crayon_error("\U274C Output does not exist: ", output$id)))
+          FALSE
+        } else {
+          TRUE
+        }
+      })
+
+      # if some output is not present, error
+      if (any(!existing_output)) {
+        cat_line(col_split(self$id, crayon_error("\U274C Output")))
+        map(self$outputs, "delete") %>% invoke_map()
+        stop("Some output not present but required")
+      }
+
+      # write all output histories including the digest of the call
+      walk(self$outputs, function(output) {
+        output$write_history(call_digest = self$digest)
+      })
+
+      # cleanup the executor
+      self$executor$stop()
     }
   ),
   active = list(
@@ -118,9 +117,9 @@ RscriptCall <- R6Class(
   "RscriptCall",
   inherit = Call,
   public = list(
-    command = paste0(Sys.getenv("R_HOME"), "/bin/R"),
-    initialize = function(id, script, inputs = list(), outputs = list()) {
-      super$initialize(id, c(list(script), inputs), outputs)
+    command = paste0("R"),
+    initialize = function(id, script, inputs = list(), outputs = list(), executor = local_executor()) {
+      super$initialize(id, c(list(script), inputs), outputs, executor)
 
       input_strings <- inputs %>% map_chr("string")
       output_strings <- outputs %>% map_chr("string")

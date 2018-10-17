@@ -9,8 +9,8 @@ CallCollection <- R6::R6Class(
       self$calls <- calls
       self$design <- design
     },
-    run = function() {
-      called <- map(self$calls, "call") %>% invoke_map()
+    start = function() {
+      called <- map(self$calls, "start") %>% invoke_map()
       waited <- map(self$calls, "wait") %>% invoke_map()
 
       invisible()

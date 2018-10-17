@@ -38,14 +38,14 @@ determine_animal_cuteness <- rscript_call(
   design = design
 )
 
-expect_rerun(determine_animal_cuteness$run())
+expect_rerun(determine_animal_cuteness$start())
 
 # cached
-expect_cached(determine_animal_cuteness$run())
+expect_cached(determine_animal_cuteness$start())
 
 # deleted output -> rerun
 determine_animal_cuteness$calls[[1]]$outputs[[1]]$delete()
-expect_rerun(determine_animal_cuteness$run())
+expect_rerun(determine_animal_cuteness$start())
 
 # run with multiple inputs
 aggregate_animal_cuteness <- rscript_call(
@@ -55,27 +55,28 @@ aggregate_animal_cuteness <- rscript_call(
   outputs = list(derived_file("derived/animal_cuteness.csv"))
 )
 
-expect_rerun(aggregate_animal_cuteness$run())
+expect_rerun(aggregate_animal_cuteness$start_and_wait())
 
-# test docker call
-plot_animal_cuteness <- docker_call(
+# test docker execution
+plot_animal_cuteness <- rscript_call(
   "plot_animal_cuteness",
-  docker("certigo/plot_animal_cuteness"),
+  script_file("scripts/plot_animal_cuteness.R"),
   inputs = list(derived_file("derived/animal_cuteness.csv")),
-  outputs = list(derived_file("results/animal_cuteness.pdf"))
+  outputs = list(derived_file("results/animal_cuteness.pdf")),
+  executor = docker_executor("certigo/plot_animal_cuteness")
 )
 
-expect_rerun(plot_animal_cuteness$run())
+expect_rerun(plot_animal_cuteness$start_and_wait())
 expect_true(file_exists(plot_animal_cuteness$outputs[[1]]$string))
 
 # no input -> error + deleted output
 aggregate_animal_cuteness$outputs[[1]]$delete()
-expect_error(plot_animal_cuteness$run())
+expect_error(plot_animal_cuteness$start_and_wait())
 expect_false(file_exists(plot_animal_cuteness$outputs[[1]]$string))
 
 # input -> rerun
-aggregate_animal_cuteness$run()
-expect_rerun(plot_animal_cuteness$run())
+aggregate_animal_cuteness$start_and_wait()
+expect_rerun(plot_animal_cuteness$start_and_wait())
 
 # test some other calls
 test_animal_cuteness <- rscript_call(
@@ -85,7 +86,7 @@ test_animal_cuteness <- rscript_call(
   outputs = list(derived_file("derived/animal_cuteness_tests.csv"))
 )
 
-expect_rerun(test_animal_cuteness$run())
+expect_rerun(test_animal_cuteness$start_and_wait())
 
 plot_animal_cuteness_tests <- rscript_call(
   "plot_animal_cuteness_tests",
@@ -94,6 +95,6 @@ plot_animal_cuteness_tests <- rscript_call(
   outputs = list(derived_file("results/animal_cuteness_tests.pdf"))
 )
 
-expect_rerun(plot_animal_cuteness_tests$run())
+expect_rerun(plot_animal_cuteness_tests$start_and_wait())
 
 setwd(oldwd)
