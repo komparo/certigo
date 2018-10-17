@@ -1,5 +1,7 @@
 #' Executors
 #'
+#' @param ... Other parameters
+#'
 #' @rdname executor
 
 
@@ -107,6 +109,5 @@ DockerExecutor <- R6Class(
 )
 
 #' @rdname executor
-#' @param container The container
 #' @export
 docker_executor <- DockerExecutor$new

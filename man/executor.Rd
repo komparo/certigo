@@ -15,7 +15,7 @@ local_executor(...)
 docker_executor(...)
 }
 \arguments{
-\item{container}{The container}
+\item{...}{Other parameters}
 }
 \description{
 Executors
