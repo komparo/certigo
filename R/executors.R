@@ -1,3 +1,8 @@
+#' Executors
+#'
+#' @rdname executor
+
+
 Executor <- R6Class(
   "Executor",
   list(
@@ -43,7 +48,7 @@ ProcessExecutor <- R6Class(
         self$error <- self$process$read_all_error_lines()
         self$process$kill_tree()
       } else {
-        # process was not run, just return nothing
+        # process was not started, just return nothing
       }
     },
     stop = function() {
@@ -72,6 +77,8 @@ LocalExecutor <- R6Class(
   inherit = ProcessExecutor
 )
 
+#' @rdname executor
+#' @export
 local_executor <- LocalExecutor$new
 
 
@@ -99,4 +106,7 @@ DockerExecutor <- R6Class(
   )
 )
 
+#' @rdname executor
+#' @param container The container
+#' @export
 docker_executor <- DockerExecutor$new
