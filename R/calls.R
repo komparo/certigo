@@ -139,7 +139,7 @@ RscriptCall <- R6Class(
       input_digests <- map(self$inputs, "digest")
       output_strings <- map(self$outputs, "string")
       paste0(
-        "Rscript ",
+        "R ",
         glue::glue_collapse(input_digests, " "),
         " ",
         glue::glue_collapse(output_strings, " ")

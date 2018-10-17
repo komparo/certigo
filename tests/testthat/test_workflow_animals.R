@@ -98,3 +98,4 @@ plot_animal_cuteness_tests <- rscript_call(
 expect_rerun(plot_animal_cuteness_tests$start_and_wait())
 
 setwd(oldwd)
+# setwd(system.file(package = "certigo"))

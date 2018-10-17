@@ -23,6 +23,8 @@ ProcessExecutor <- R6Class(
   public = list(
     process = NULL,
     start = function(command, args) {
+      if (command == "R") {command <- paste0(Sys.getenv("R_HOME"), "/bin/R")} # fix for R CMD check which apparently does not allow running R in processx without running it in R home
+
       self$process <- processx::process$new(
         command,
         args,
