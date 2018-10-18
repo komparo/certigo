@@ -49,55 +49,53 @@ Call <- R6Class(
       if(all(!is.na(output_call_digests)) && all(output_call_digests == call_digest)) {
         # cached
         cat_line(col_split(self$id, crayon_ok("\U23F0 Cached")))
-        FALSE
       } else {
         # start the executor
         self$executor$start(self$command, self$args)
         cat_line(col_split(self$id, crayon_info("\U25BA Started")))
-        TRUE
       }
     },
     start_and_wait = function() {
-      started <- self$start()
-      if (started) {
-        self$wait()
-      }
+      self$start()
+      self$wait()
     },
     wait = function() {
-      self$executor$wait()
+      if (self$executor$status == "running") {
+        self$executor$wait()
 
-      if (self$executor$status %in% c("success")) {
-        cat_line(col_split(self$id, crayon_ok("\U2714 Finished")))
-      } else if (self$executor$status %in% c("errored")) {
-        cat_line(col_split(self$id, crayon_error("\U274C Errored")))
-        map(self$outputs, "delete") %>% invoke_map()
-        cat_line(self$executor$error %>% tail(5))
-      }
-
-      # check whether output is present
-      existing_output <- map_lgl(self$outputs, function(output) {
-        if (TRUE && !output$exists) {
-          cat_line(col_split(self$id, crayon_error("\U274C Output does not exist: ", output$id)))
-          FALSE
-        } else {
-          TRUE
+        if (self$executor$status %in% c("success")) {
+          cat_line(col_split(self$id, crayon_ok("\U2714 Finished")))
+        } else if (self$executor$status %in% c("errored")) {
+          cat_line(col_split(self$id, crayon_error("\U274C Errored")))
+          map(self$outputs, "delete") %>% invoke_map()
+          cat_line(self$executor$error %>% tail(5))
         }
-      })
 
-      # if some output is not present, error
-      if (any(!existing_output)) {
-        cat_line(col_split(self$id, crayon_error("\U274C Output")))
-        map(self$outputs, "delete") %>% invoke_map()
-        stop("Some output not present but required")
+        # check whether output is present
+        existing_output <- map_lgl(self$outputs, function(output) {
+          if (TRUE && !output$exists) {
+            cat_line(col_split(self$id, crayon_error("\U274C Output does not exist: ", output$id)))
+            FALSE
+          } else {
+            TRUE
+          }
+        })
+
+        # if some output is not present, error
+        if (any(!existing_output)) {
+          cat_line(col_split(self$id, crayon_error("\U274C Output")))
+          map(self$outputs, "delete") %>% invoke_map()
+          stop("Some output not present but required")
+        }
+
+        # write all output histories including the digest of the call
+        walk(self$outputs, function(output) {
+          output$write_history(call_digest = self$digest)
+        })
+
+        # cleanup the executor
+        self$executor$stop()
       }
-
-      # write all output histories including the digest of the call
-      walk(self$outputs, function(output) {
-        output$write_history(call_digest = self$digest)
-      })
-
-      # cleanup the executor
-      self$executor$stop()
     }
   ),
   active = list(
