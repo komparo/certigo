@@ -27,7 +27,7 @@ CallCollection <- R6::R6Class(
 # Create either a call collection or one call depending on whether a design was given
 # This function will return another function which can be used to construct a call or set of calls using a Call subclass
 calls_factory <- function(class) {
-  function(id, ..., design = NULL) {
+  function(id, ..., design = NULL, params = list()) {
     testthat::expect_true(is.null(design) || is.data.frame(design))
 
     if(is.null(design)) {
@@ -45,7 +45,7 @@ calls_factory <- function(class) {
         design_row <- list(...)
 
         # evaluate the arguments for this design row
-        arguments <- purrr::map(argument_expressions, rlang::eval_tidy, design_row)
+        arguments <- purrr::map(argument_expressions, rlang::eval_tidy, data = list_modify(params, !!!design_row))
 
         # create an extra input which includes the design
         design_parameters <- parameters(design_row)
