@@ -38,14 +38,14 @@ determine_animal_cuteness <- rscript_call(
   design = design
 )
 
-expect_rerun(determine_animal_cuteness$start())
+expect_rerun(determine_animal_cuteness$start_and_wait())
 
 # cached
-expect_cached(determine_animal_cuteness$start())
+expect_cached(determine_animal_cuteness$start_and_wait())
 
 # deleted output -> rerun
 determine_animal_cuteness$calls[[1]]$outputs[[1]]$delete()
-expect_rerun(determine_animal_cuteness$start())
+expect_rerun(determine_animal_cuteness$start_and_wait())
 
 # run with multiple inputs
 aggregate_animal_cuteness <- rscript_call(
