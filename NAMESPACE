@@ -2,7 +2,6 @@
 
 export(derived_file)
 export(docker)
-export(docker_call)
 export(docker_executor)
 export(local_executor)
 export(parameters)

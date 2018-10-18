@@ -4,15 +4,12 @@
 \name{Call}
 \alias{Call}
 \alias{rscript_call}
-\alias{docker_call}
 \title{A call}
 \format{An object of class \code{R6ClassGenerator} of length 24.}
 \usage{
 Call
 
-rscript_call(id, ..., design = NULL)
-
-docker_call(id, ..., design = NULL)
+rscript_call(id, ..., design = NULL, params = list())
 }
 \arguments{
 \item{id}{The name of the call}
@@ -20,6 +17,8 @@ docker_call(id, ..., design = NULL)
 \item{...}{Extra arguments to the call, such as inputs, outputs, script, ...}
 
 \item{design}{A dataframe containing the information for each call in a separate row}
+
+\item{params}{A list of extra parameters}
 }
 \description{
 A call

@@ -3,6 +3,7 @@
 #' @param id The name of the call
 #' @param ... Extra arguments to the call, such as inputs, outputs, script, ...
 #' @param design A dataframe containing the information for each call in a separate row
+#' @param params A list of extra parameters
 #' @rdname call
 Call <- R6Class(
   "Call",
@@ -151,47 +152,3 @@ RscriptCall <- R6Class(
 #' @export
 #' @rdname call
 rscript_call <- calls_factory(RscriptCall)
-
-
-
-#   ____________________________________________________________________________
-#   Docker                                                                  ####
-
-DockerCall <- R6Class(
-  "DockerCall",
-  inherit = Call,
-  public = list(
-    command = "docker",
-    initialize = function(id, container, inputs = list(), outputs = list()) {
-      super$initialize(id, c(list(container), inputs), outputs)
-
-      input_strings <- inputs %>% map_chr("string")
-      output_strings <- outputs %>% map_chr("string")
-
-      self$args <- c(
-        "run",
-        "-v", glue::glue("{fs::path_abs('.')}:/data"),
-        "-w", "/data",
-        container$string,
-        input_strings,
-        output_strings
-      )
-    }
-  ),
-  active = list(
-    digest = function() {
-      input_digests <- map(self$inputs, "digest")
-      output_strings <- map(self$outputs, "string")
-      paste0(
-        "docker ",
-        glue::glue_collapse(input_digests, " "),
-        " ",
-        glue::glue_collapse(output_strings, " ")
-      )
-    }
-  )
-)
-
-#' @export
-#' @rdname call
-docker_call <- calls_factory(DockerCall)
