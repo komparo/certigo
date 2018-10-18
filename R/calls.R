@@ -14,6 +14,7 @@ Call <- R6Class(
     executor = NULL,
     command = NULL,
     args = NULL,
+    cached = FALSE,
     initialize = function(id, inputs, outputs, executor = local_executor()) {
       self$id <- id
 
@@ -49,10 +50,12 @@ Call <- R6Class(
       if(all(!is.na(output_call_digests)) && all(output_call_digests == call_digest)) {
         # cached
         cat_line(col_split(self$id, crayon_ok("\U23F0 Cached")))
+        self$cached <- TRUE
       } else {
         # start the executor
         self$executor$start(self$command, self$args)
         cat_line(col_split(self$id, crayon_info("\U25BA Started")))
+        self$cached <- FALSE
       }
     },
     start_and_wait = function() {
@@ -60,7 +63,7 @@ Call <- R6Class(
       self$wait()
     },
     wait = function() {
-      if (self$executor$status == "running") {
+      if (!self$cached) {
         self$executor$wait()
 
         if (self$executor$status %in% c("success")) {
