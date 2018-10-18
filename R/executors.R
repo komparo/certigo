@@ -38,6 +38,7 @@ ProcessExecutor <- R6Class(
         stdout = "|",
         stderr = "|",
         supervise = TRUE,
+        cleanup = TRUE,
         cleanup_tree = TRUE
       )
     },
@@ -98,6 +99,7 @@ DockerExecutor <- R6Class(
         "run",
         "-v", glue::glue("{fs::path_abs('.')}:/data"),
         "-w", "/data",
+        "--rm=false",
         self$container,
         command,
         args

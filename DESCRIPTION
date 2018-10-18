@@ -27,13 +27,13 @@ Imports:
   readr,
   rlang,
   stringr,
+  testthat,
   tibble,
   tidyr
 Suggests: 
-    testthat,
-    ggraph,
-    tidygraph,
-    extrafont,
-    clipr
+  ggraph,
+  tidygraph,
+  extrafont,
+  clipr
 URL: https://github.com/komparo/certigo
 BugReports: https://github.com/komparo/certigo/issues
