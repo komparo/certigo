@@ -49,7 +49,7 @@ calls_factory <- function(class) {
 
         # create an extra input which includes the design
         design_parameters <- parameters(design_row)
-        if ("inputs" %in% arguments) {
+        if ("inputs" %in% names(arguments)) {
           arguments$inputs <- c(arguments$inputs, list(design = design_parameters))
         } else {
           arguments$inputs <- list(design = design_parameters)
