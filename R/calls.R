@@ -49,15 +49,19 @@ Call <- R6Class(
       if(all(!is.na(output_call_digests)) && all(output_call_digests == call_digest)) {
         # cached
         cat_line(col_split(self$id, crayon_ok("\U23F0 Cached")))
+        FALSE
       } else {
         # start the executor
         self$executor$start(self$command, self$args)
         cat_line(col_split(self$id, crayon_info("\U25BA Started")))
+        TRUE
       }
     },
     start_and_wait = function() {
-      self$start()
-      self$wait()
+      started <- self$start()
+      if (started) {
+        self$wait()
+      }
     },
     wait = function() {
       self$executor$wait()
