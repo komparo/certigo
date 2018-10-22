@@ -48,7 +48,6 @@ plot_animal_cuteness <- rscript_call(
   )
 )
 
-
 test_animal_cuteness <- rscript_call(
   "test_animal_cuteness",
   inputs = list(
@@ -68,6 +67,16 @@ plot_animal_cuteness_tests <- rscript_call(
     script = list(script_file("scripts/plot_animal_cuteness_tests.R"))
   ),
   outputs = list(plot = derived_file("results/animal_cuteness_tests.pdf"))
+)
+
+always_error <- rscript_call(
+  "always_error",
+  inputs = bind_cols(
+    aggregate_animal_cuteness$outputs
+  ) %>% mutate(
+    script = list(script_file("scripts/always_error.R"))
+  ),
+  outputs = list(plot = derived_file("results/error.pdf"))
 )
 
 animal_workflow <- workflow(

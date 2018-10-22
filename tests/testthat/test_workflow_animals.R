@@ -61,6 +61,8 @@ expect_rerun(test_animal_cuteness$start_and_wait())
 
 expect_rerun(plot_animal_cuteness_tests$start_and_wait())
 
+expect_error(capture_output(always_error$start_and_wait()))
+
 ##  ............................................................................
 ##  Test workflow                                                           ####
 create_workflow_dir()
