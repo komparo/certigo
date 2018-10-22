@@ -7,8 +7,9 @@
 
 Executor <- R6Class(
   "Executor",
+  inherit = Object,
   list(
-    initialise = function() stop(),
+    initialize = function() stop(),
     start = function() stop(),
     wait = function() stop(),
     start_and_wait = function() {
@@ -29,6 +30,7 @@ ProcessExecutor <- R6Class(
   inherit = Executor,
   public = list(
     process = NULL,
+    initialize = function() {},
     start = function(command, args) {
       if (command == "R") {command <- paste0(Sys.getenv("R_HOME"), "/bin/R")} # fix for R CMD check which apparently does not allow running R in processx without running it in R home
 
@@ -77,7 +79,14 @@ ProcessExecutor <- R6Class(
 
 LocalExecutor <- R6Class(
   "LocalExecutor",
-  inherit = ProcessExecutor
+  inherit = ProcessExecutor,
+  list(
+    id = "local"
+  ),
+  active = list(
+    digest = function(...) "local",
+    exists = function(...) TRUE
+  )
 )
 
 #' @rdname executor
@@ -90,9 +99,11 @@ DockerExecutor <- R6Class(
   "DockerExecutor",
   inherit = ProcessExecutor,
   public = list(
+    id = "docker",
     container = NULL,
     initialize = function(container = "rocker/tidyverse") {
       self$container <- container
+      self$string <- container
     },
     start = function(command, args) {
       args <- c(
@@ -107,6 +118,10 @@ DockerExecutor <- R6Class(
       command <- "docker"
       super$start(command, args)
     }
+  ),
+  active = list(
+    digest = function(...) "docker",
+    exists = function(...) TRUE
   )
 )
 

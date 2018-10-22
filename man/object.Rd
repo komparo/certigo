@@ -8,6 +8,7 @@
 \alias{raw_file}
 \alias{script_file}
 \alias{parameters}
+\alias{object_set}
 \title{Objects}
 \format{An object of class \code{R6ClassGenerator} of length 24.}
 \usage{
@@ -22,6 +23,8 @@ raw_file(...)
 script_file(...)
 
 parameters(...)
+
+object_set(...)
 }
 \arguments{
 \item{...}{...}

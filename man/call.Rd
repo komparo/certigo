@@ -9,7 +9,7 @@
 \usage{
 Call
 
-rscript_call(id, ..., design = NULL, params = list())
+rscript_call(id, inputs, outputs)
 }
 \arguments{
 \item{id}{The name of the call}

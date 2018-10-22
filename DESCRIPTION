@@ -16,6 +16,7 @@ Imports:
   crayon,
   cli,
   dplyr,
+  dynutils,
   igraph,
   jsonlite,
   fs,

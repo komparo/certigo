@@ -239,3 +239,45 @@ Parameters <- R6Class(
 #' @rdname object
 #' @export
 parameters <- Parameters$new
+
+
+
+
+
+
+
+
+
+
+
+
+ObjectSet <- R6Class(
+  "ObjectSet",
+  inherit = Object,
+  public = list(
+    objects = list(),
+    initialize = function(objects) {
+      self$objects <- objects
+      self$id <- digest <- self$digest
+
+      object_set_file <- paste0("./.certigo/object_sets/", digest)
+      if (!file.exists(object_set_file)) {
+        object_strings <- map_chr(self$objects, "string")
+        dir_create(path_dir(object_set_file), recursive = TRUE)
+        jsonlite::write_json(object_strings, object_set_file)
+      }
+      self$string <- object_set_file
+    }
+  ),
+  active = list(
+    digest = function(...) {
+      map_chr(self$objects, "digest") %>% digest::digest(algo = "md5")
+    },
+    exists = function(...) map_lgl(self$objects, "exists") %>% all()
+  )
+)
+
+
+#' @rdname object
+#' @export
+object_set <- ObjectSet$new

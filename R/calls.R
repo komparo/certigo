@@ -15,14 +15,19 @@ Call <- R6Class(
     command = NULL,
     args = NULL,
     cached = FALSE,
-    initialize = function(id, inputs, outputs, executor = local_executor()) {
+    initialize = function(id, inputs, outputs) {
       self$id <- id
 
       testthat::expect_true(all(map_lgl(inputs, ~"Object" %in% class(.))), "All inputs should be an Object")
       testthat::expect_true(all(map_lgl(outputs, ~"Object" %in% class(.))), "All outputs should be an Object")
-      testthat::expect_true("Executor" %in% class(executor), "The executor should be an Executor")
 
-      self$executor <- executor
+      # add local executor if not present in inputs
+      if (!"executor" %in% names(inputs)) {
+        inputs$executor <- local_executor()
+      }
+      self$executor <- inputs$executor
+
+      # add inputs & outputs to self
       self$inputs <- inputs
       self$outputs <- outputs
     },
@@ -124,15 +129,17 @@ RscriptCall <- R6Class(
   inherit = Call,
   public = list(
     command = paste0("R"),
-    initialize = function(id, script, inputs = list(), outputs = list(), executor = local_executor()) {
-      super$initialize(id, c(list(script), inputs), outputs, executor)
+    initialize = function(id, inputs = list(), outputs = list()) {
+      testthat::expect_true("script" %in% names(inputs))
+
+      super$initialize(id, inputs, outputs)
 
       input_strings <- inputs %>% map_chr("string")
       output_strings <- outputs %>% map_chr("string")
 
       self$args <- c(
         "-e",
-        glue::glue("inputs <- {deparse_friendly(input_strings)};outputs <- {deparse_friendly(output_strings)};pdf(NULL);source('{script$string}')")
+        glue::glue("inputs <- {deparse_friendly(input_strings)};outputs <- {deparse_friendly(output_strings)};pdf(NULL);source('{inputs$script$string}')")
       )
     },
     debug = function() {

@@ -10,6 +10,7 @@
 #' @import R6
 #' @import cli
 #' @import readr
+#' @import dynutils
 #' @importFrom glue glue
 #'
 #' @docType package

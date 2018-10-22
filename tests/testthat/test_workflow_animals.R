@@ -3,6 +3,7 @@ library(fs)
 library(dplyr)
 library(readr)
 library(purrr)
+library(stringr)
 
 context("Testing workflow animals")
 
@@ -14,6 +15,9 @@ dir.create(tempdir)
 dir_copy(system.file("testdata/workflow_animals", package = "certigo"), tempdir)
 setwd(paste0(tempdir, "/workflow_animals"))
 
+# recopy scripts
+file_copy(dir_ls(system.file("testdata/workflow_animals/scripts", package = "certigo")), "./scripts/", overwrite = T)
+
 # build the docker image
 processx::run("docker", c("build", "-t", "certigo/plot_animal_cuteness", system.file('testdata/workflow_animals/containers/plot_animal_cuteness/', package = 'certigo')), echo = F)
 
@@ -24,7 +28,7 @@ expect_cached <- function(x) {expect_output(x, "^.*Cached$", info = "Expected a 
 # dir_delete("derived")
 # file_delete(dir_ls(".", recursive = TRUE, glob = "*.history", all = TRUE))
 
-# run with multiple outputs
+# define starting design
 design <- tibble(
   animal = c("dog", "cat", "horse"),
   cuteness_mean = c(1, 0.9, 0.8),
@@ -33,9 +37,14 @@ design <- tibble(
 
 determine_animal_cuteness <- rscript_call(
   "determine_animal_cuteness",
-  script_file("scripts/determine_animal_cuteness.R"),
-  outputs = list(derived_file(stringr::str_glue("derived/animal_cuteness/{animal}.csv"))),
-  design = design
+  inputs = design %>% transmute(
+    parameters = design %>% dynutils::mapdf(parameters),
+    script = list(script_file("scripts/determine_animal_cuteness.R"))
+  ),
+  outputs = design %>%
+    transmute(animal_cuteness = str_glue("derived/animal_cuteness/{design$animal}.csv") %>%
+             map(derived_file)
+    )
 )
 
 expect_rerun(determine_animal_cuteness$start_and_wait())
@@ -44,15 +53,17 @@ expect_rerun(determine_animal_cuteness$start_and_wait())
 expect_cached(determine_animal_cuteness$start_and_wait())
 
 # deleted output -> rerun
-determine_animal_cuteness$calls[[1]]$outputs[[1]]$delete()
+determine_animal_cuteness$outputs$animal_cuteness[[1]]$delete()
 expect_rerun(determine_animal_cuteness$start_and_wait())
 
 # run with multiple inputs
 aggregate_animal_cuteness <- rscript_call(
   "aggregate_animal_cuteness",
-  script_file("scripts/aggregate_animal_cuteness.R"),
-  inputs = stringr::str_glue("derived/animal_cuteness/{design$animal}.csv") %>% map(derived_file),
-  outputs = list(derived_file("derived/animal_cuteness.csv"))
+  inputs = tibble(
+    script = list(script_file("scripts/aggregate_animal_cuteness.R")),
+    animal_cutenesses = list(object_set(determine_animal_cuteness$outputs$animal_cuteness))
+  ),
+  outputs = tibble(animal_cuteness = list(derived_file("derived/animal_cuteness.csv")))
 )
 
 expect_rerun(aggregate_animal_cuteness$start_and_wait())
@@ -60,39 +71,49 @@ expect_rerun(aggregate_animal_cuteness$start_and_wait())
 # test docker execution
 plot_animal_cuteness <- rscript_call(
   "plot_animal_cuteness",
-  script_file("scripts/plot_animal_cuteness.R"),
-  inputs = list(derived_file("derived/animal_cuteness.csv")),
-  outputs = list(derived_file("results/animal_cuteness.pdf")),
-  executor = docker_executor("certigo/plot_animal_cuteness")
+  inputs = aggregate_animal_cuteness$outputs %>%
+    mutate(
+      script = list(script_file("scripts/plot_animal_cuteness.R")),
+      executor = list(docker_executor("certigo/plot_animal_cuteness"))
+    ),
+  outputs = list(
+    plot = derived_file("results/animal_cuteness.pdf")
+  )
 )
 
 expect_rerun(plot_animal_cuteness$start_and_wait())
-expect_true(file_exists(plot_animal_cuteness$outputs[[1]]$string))
+expect_true(file_exists(plot_animal_cuteness$outputs$plot[[1]]$string))
 
 # no input -> error + deleted output
-aggregate_animal_cuteness$outputs[[1]]$delete()
+aggregate_animal_cuteness$outputs$animal_cuteness[[1]]$delete()
 expect_error(capture_output(plot_animal_cuteness$start_and_wait()))
-expect_false(file_exists(plot_animal_cuteness$outputs[[1]]$string))
+expect_false(file_exists(plot_animal_cuteness$outputs$plot[[1]]$string))
 
-# input -> rerun
+# input is again present -> rerun
 expect_rerun(aggregate_animal_cuteness$start_and_wait())
 expect_rerun(plot_animal_cuteness$start_and_wait())
 
 # test some other calls
 test_animal_cuteness <- rscript_call(
   "test_animal_cuteness",
-  script_file("scripts/test_animal_cuteness.R"),
-  inputs = list(derived_file("derived/animal_cuteness.csv")),
-  outputs = list(derived_file("derived/animal_cuteness_tests.csv"))
+  inputs = list(
+    script = script_file("scripts/test_animal_cuteness.R"),
+    animal_cuteness = derived_file("derived/animal_cuteness.csv")
+  ),
+  outputs = list(tests = derived_file("derived/animal_cuteness_tests.csv"))
 )
 
 expect_rerun(test_animal_cuteness$start_and_wait())
 
 plot_animal_cuteness_tests <- rscript_call(
   "plot_animal_cuteness_tests",
-  script_file("scripts/plot_animal_cuteness_tests.R"),
-  inputs = list(derived_file("derived/animal_cuteness.csv"), derived_file("derived/animal_cuteness_tests.csv")),
-  outputs = list(derived_file("results/animal_cuteness_tests.pdf"))
+  inputs = bind_cols(
+    aggregate_animal_cuteness$outputs,
+    test_animal_cuteness$outputs
+  ) %>% mutate(
+    script = list(script_file("scripts/plot_animal_cuteness_tests.R"))
+  ),
+  outputs = list(plot = derived_file("results/animal_cuteness_tests.pdf"))
 )
 
 expect_rerun(plot_animal_cuteness_tests$start_and_wait())
