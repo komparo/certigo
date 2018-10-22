@@ -13,13 +13,14 @@ design <- tibble(
 
 determine_animal_cuteness <- rscript_call(
   "determine_animal_cuteness",
+  design = design,
   inputs = design %>% transmute(
     parameters = design %>% dynutils::mapdf(parameters),
     script = list(script_file("scripts/determine_animal_cuteness.R"))
   ),
   outputs = design %>%
     transmute(
-      animal_cuteness = str_glue("derived/animal_cuteness/{design$animal}.csv") %>% map(derived_file)
+      animal_cuteness = str_glue("derived/animal_cuteness/{animal}.csv") %>% map(derived_file)
     )
 )
 

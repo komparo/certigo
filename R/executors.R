@@ -18,7 +18,8 @@ Executor <- R6Class(
     },
     stop = function() stop(),
     error = NULL,
-    output = NULL
+    output = NULL,
+    string = ""
   ),
   active = list(
     status = function() stop()

@@ -9,14 +9,18 @@ Object <- R6Class(
   public = list(
     id = NULL,
     string = NULL,
-    history = NULL
+    history = NULL,
+    write_history = function(call_digest) {stop("Write history not implemented for", self$id)}
   ),
   active = list(
     digest = function() {
-      stop("Digest not implemented")
+      stop("Digest not implemented for", self$id)
     },
     exists = function(...) {
       stop("Exists not implemented for ", self$id)
+    },
+    call_digest = function(...) {
+      stop("Call digest not implemented for ", self$id)
     }
   )
 )

@@ -94,17 +94,22 @@ Workflow <- R6Class(
         self$execution <- self$execution %>% mutate(status = map_chr(call, "status"))
 
         execution_waiting <- self$execution %>%
-          filter(status == "waiting")
-        execution_success <- self$execution %>%
-          filter(status %in% c("cached", "success"))
+          filter(status == "waiting") %>%
+          select(-status)
 
         execution_ready <- self$call_dependencies %>%
           filter(id %in% execution_waiting$id) %>%
-          mutate(success = dependency %in% execution_success$id) %>%
+          left_join(self$execution, c("dependency"="id")) %>%
           group_by(id) %>%
-          summarise(ready = all(success)) %>%
-          tidyr::complete(id = execution_waiting$id, fill = list(ready = TRUE)) %>%
-          filter(ready) %>%
+          summarise(
+            status = case_when(
+              any(status == "error") ~ "dependency_error",
+              any(status == "waiting") ~ "waiting",
+              all(status %in% c("cached", "success")) ~ "ready"
+            )
+          ) %>%
+          tidyr::complete(id = execution_waiting$id, fill = list(status = "ready")) %>%
+          filter(status == "ready") %>%
           left_join(execution_waiting, "id")
 
         execution_ready$call %>% map("start") %>% invoke_map()
@@ -112,9 +117,16 @@ Workflow <- R6Class(
 
         Sys.sleep(poll_time)
       }
+
+      if (all(self$execution$status %in% c("cached", "success"))) {
+        cat_rule(crayon_ok("\U2714 Workflow successfully executed"))
+      } else {
+        cat_rule(crayon_error("\U2714 Some errors during workflow execution"))
+      }
     },
     reset = function() {
       map(self$calls, "reset") %>% invoke_map()
+      invisible()
     }
   )
 )

@@ -5,7 +5,8 @@ CallSet <- R6::R6Class(
     id = NULL,
     inputs = NULL,
     outputs = NULL,
-    initialize = function(id, call_class, inputs, outputs) {
+    design = NULL,
+    initialize = function(id, call_class, inputs, outputs, design = NULL) {
       self$id <- id
 
       # check inputs and outputs tibbles
@@ -17,15 +18,17 @@ CallSet <- R6::R6Class(
       # set inputs and outputs of this call set
       self$inputs <- inputs
       self$outputs <- outputs
+      self$design <- design
 
       # create calls
       self$calls <- map(seq_len(nrow(inputs)), function(call_ix) {
         inputs_row <- dynutils::extract_row_to_list(inputs, call_ix)
         outputs_row <- dynutils::extract_row_to_list(outputs, call_ix)
+        design_row <- dynutils::extract_row_to_list(design, call_ix)
 
         id_row <- paste0(id, "_", call_ix)
 
-        call_class$new(id_row, inputs_row, outputs_row)
+        call_class$new(id_row, inputs_row, outputs_row, design_row)
       })
     },
     start = function() {
@@ -47,12 +50,10 @@ CallSet <- R6::R6Class(
 )
 
 calls_factory <- function(class) {
-  function(id, inputs, outputs) {
-    CallSet$new(id, class, inputs, outputs)
+  function(id, inputs, outputs, design = NULL) {
+    CallSet$new(id, class, inputs, outputs, design = design)
   }
 }
-
-
 
 process_objects <- function(x) {
   if (is.data.frame(x)) {

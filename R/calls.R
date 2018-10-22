@@ -10,15 +10,24 @@ Call <- R6Class(
     id = NULL,
     inputs = NULL,
     outputs = NULL,
+    design = NULL,
     executor = NULL,
     command = NULL,
     args = NULL,
     cached = FALSE,
-    initialize = function(id, inputs, outputs) {
+    initialize = function(id, inputs, outputs, design = NULL) {
       self$id <- id
 
+      # check inputs and outputs ----------------------
+      # test whether all inputs and outputs are objects
       testthat::expect_true(all(map_lgl(inputs, ~"Object" %in% class(.))), "All inputs should be an Object")
       testthat::expect_true(all(map_lgl(outputs, ~"Object" %in% class(.))), "All outputs should be an Object")
+
+      # test whether all rows match
+      testthat::expect_equal(nrow(inputs), nrow(outputs))
+      if (!is.null(design)) {
+        testthat::expect_equal(nrow(inputs), nrow(design))
+      }
 
       # add local executor if not present in inputs
       if (!"executor" %in% names(inputs)) {
@@ -29,6 +38,7 @@ Call <- R6Class(
       # add inputs & outputs to self
       self$inputs <- inputs
       self$outputs <- outputs
+      self$design <- design
     },
     start = function() {
       # make sure all inputs are present
@@ -51,6 +61,7 @@ Call <- R6Class(
       call_digest <- self$digest
 
       # choose between cached or actual execution
+      # if an output is not present, its call digest will be NA, which will always trigger a rerun
       if(all(!is.na(output_call_digests)) && all(output_call_digests == call_digest)) {
         # cached
         cat_line(col_split(self$id, crayon_ok("\U23F0 Cached")))
@@ -141,13 +152,15 @@ RscriptCall <- R6Class(
   inherit = Call,
   public = list(
     command = paste0("R"),
-    initialize = function(id, inputs = list(), outputs = list()) {
+    initialize = function(id, inputs = list(), outputs = list(), design = NULL) {
       testthat::expect_true("script" %in% names(inputs))
 
-      super$initialize(id, inputs, outputs)
+      super$initialize(id, inputs, outputs, design)
 
-      input_strings <- inputs %>% map_chr("string")
-      output_strings <- outputs %>% map_chr("string")
+      # get input and output strings
+      # first filter the script and executor out
+      input_strings <- self$inputs[-which(names(self$inputs) %in% c("script", "executor"))] %>% map_chr("string")
+      output_strings <- self$outputs %>% map_chr("string")
 
       self$args <- c(
         "-e",

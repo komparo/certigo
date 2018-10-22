@@ -21,7 +21,9 @@ processx::run("docker", c("build", "-t", "certigo/plot_animal_cuteness", system.
 
 # some testing functions
 expect_rerun <- function(x) {expect_output(x, "^.*Finished$", info = "Expected a rerun")}
+expect_rerun_somewhere <- function(x) {expect_output(x, ".*Finished.*", info = "Expected a rerun")}
 expect_cached <- function(x) {expect_output(x, "^.*Cached$", info = "Expected a cached")}
+expect_cached_somewhere <- function(x) {expect_output(x, ".*Cached.*", info = "Expected a cached")}
 
 # function to reset
 create_workflow_dir()
@@ -69,9 +71,9 @@ create_workflow_dir()
 source(system.file("testdata/workflow_animals/workflow.R", package = "certigo"))
 
 animal_workflow$reset()
-expect_rerun(animal_workflow$run())
+expect_rerun_somewhere(animal_workflow$run())
 animal_workflow$reset()
-expect_cached(animal_workflow$run())
+expect_cached_somewhere(animal_workflow$run())
 
 ##  ............................................................................
 ##  Cleanup                                                                 ####
