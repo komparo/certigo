@@ -2,8 +2,6 @@ library(readr)
 library(dplyr)
 library(purrr)
 
-animal_cutenesses <- jsonlite::read_json(inputs[["animal_cutenesses"]])
-
-map(animal_cutenesses, read_csv) %>%
+map(inputs[2:length(inputs)], read_csv) %>%
   bind_rows() %>%
   write_csv(outputs[[1]])

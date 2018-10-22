@@ -14,11 +14,9 @@ rscript_call(id, inputs, outputs)
 \arguments{
 \item{id}{The name of the call}
 
-\item{...}{Extra arguments to the call, such as inputs, outputs, script, ...}
+\item{inputs}{The inputs}
 
-\item{design}{A dataframe containing the information for each call in a separate row}
-
-\item{params}{A list of extra parameters}
+\item{outputs}{The outputs}
 }
 \description{
 A call

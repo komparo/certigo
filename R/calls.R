@@ -1,9 +1,8 @@
 #' A call
 #'
 #' @param id The name of the call
-#' @param ... Extra arguments to the call, such as inputs, outputs, script, ...
-#' @param design A dataframe containing the information for each call in a separate row
-#' @param params A list of extra parameters
+#' @param inputs The inputs
+#' @param outputs The outputs
 #' @rdname call
 Call <- R6Class(
   "Call",
@@ -76,7 +75,9 @@ Call <- R6Class(
         } else if (self$executor$status %in% c("errored")) {
           cat_line(col_split(self$id, crayon_error("\U274C Errored")))
           map(self$outputs, "delete") %>% invoke_map()
-          cat_line(self$executor$error %>% tail(5))
+          cat_line(self$executor$error %>% tail(10))
+        } else {
+          stop("Process neither did not success nor error, was it started?")
         }
 
         # check whether output is present
@@ -104,12 +105,23 @@ Call <- R6Class(
         # cleanup the executor
         self$executor$stop()
       }
+    },
+    reset = function() {
+      self$executor$reset()
+      self$cached <- FALSE
     }
   ),
   active = list(
     label = function(...) fontawesome_map["play"],
     digest = function() {
       stop("Digest not implemented for this call")
+    },
+    status = function(...) {
+      if (self$cached) {
+        "cached"
+      } else {
+        self$executor$status
+      }
     }
   )
 )

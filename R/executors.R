@@ -57,13 +57,15 @@ ProcessExecutor <- R6Class(
       }
     },
     stop = function() {
+    },
+    reset = function() {
       self$process <- NULL
     }
   ),
   active = list(
     status = function() {
       if(is.null(self$process)) {
-        "setup"
+        "waiting"
       } else if (self$process$is_alive()) {
         "running"
       } else if(self$process$get_exit_status() > 0) {
@@ -99,11 +101,11 @@ DockerExecutor <- R6Class(
   "DockerExecutor",
   inherit = ProcessExecutor,
   public = list(
-    id = "docker",
     container = NULL,
     initialize = function(container = "rocker/tidyverse") {
       self$container <- container
       self$string <- container
+      self$id <- paste0("docker: ", container)
     },
     start = function(command, args) {
       args <- c(

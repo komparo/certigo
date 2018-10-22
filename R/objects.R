@@ -68,6 +68,9 @@ File <- R6Class(
     last_digest = NULL,
     initialize = function(path) {
       if (is.null(path)) {stop("Path cannot be null")}
+
+      path <- fs::path_norm(path) # cleanup path (eg. remove "//", or remove "./")
+
       self$path <- path
       self$id <- path
       self$string <- path
@@ -258,11 +261,10 @@ ObjectSet <- R6Class(
     objects = list(),
     initialize = function(objects) {
       self$objects <- objects
-      self$id <- digest <- self$digest
-
-      object_set_file <- paste0("./.certigo/object_sets/", digest)
+      object_strings <- map_chr(self$objects, "string")
+      self$id <- digest::digest(object_strings, algo = "md5")
+      object_set_file <- paste0("./.certigo/object_sets/", self$id)
       if (!file.exists(object_set_file)) {
-        object_strings <- map_chr(self$objects, "string")
         dir_create(path_dir(object_set_file), recursive = TRUE)
         jsonlite::write_json(object_strings, object_set_file)
       }

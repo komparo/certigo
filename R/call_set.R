@@ -39,6 +39,9 @@ CallSet <- R6::R6Class(
     start_and_wait = function() {
       self$start()
       self$wait()
+    },
+    debug = function() {
+      self$calls[[1]]$debug()
     }
   )
 )
@@ -63,7 +66,3 @@ process_objects <- function(x) {
     stop("Invalid inputs/outputs object")
   }
 }
-
-
-
-process_objects
