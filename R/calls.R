@@ -3,6 +3,7 @@
 #' @param id The name of the call
 #' @param inputs The inputs
 #' @param outputs The outputs
+#' @param design The design
 #' @rdname call
 Call <- R6Class(
   "Call",
