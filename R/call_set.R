@@ -16,13 +16,11 @@ CallSet <- R6::R6Class(
       testthat::expect_equal(nrow(inputs), nrow(outputs))
 
       # create dummy design if not given
+
       if (is.null(design)) {
         design <- tibble(id = paste0(id, "_", seq_len(nrow(inputs))))
-      } else if (!"id" %in% colnames(design)) {
-        design[["id"]] <- paste0(id, "_", seq_len(nrow(inputs)))
-      } else {
-        design[["id"]] <- paste0(id, "_", design[["id"]])
       }
+      design$id <- paste0(id, "_", seq_len(nrow(inputs)))
 
       # set inputs and outputs of this call set
       self$inputs <- inputs
@@ -91,12 +89,22 @@ CallCollection <- R6::R6Class(
     outputs = NULL,
     design = NULL,
     initialize = function(id, ...) {
+      # create calls
       self$calls <- list(...) %>% map("calls") %>% flatten()
+
+      # adapt ids
       walk(self$calls, function(call) {
         call$id <- paste0(id, "/", call$id)
         call$design$id <- call$id
       })
 
+      # check call ids
+      call_ids <- map(self$calls, "id")
+      if (any(duplicated(call_ids))) {
+        stop("Duplicated call ids: ", unique(call_ids[duplicated(call_ids)]) %>% glue::glue_collapse(", "))
+      }
+
+      # merge inputs, outputs and design
       self$inputs <- self$calls %>% map("inputs") %>% dynutils::list_as_tibble()
       self$outputs <- self$calls %>% map("outputs") %>% dynutils::list_as_tibble()
       self$design <- self$calls %>% map("design") %>% dynutils::list_as_tibble()
