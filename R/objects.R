@@ -171,7 +171,7 @@ RawFile <- R6Class(
       super$initialize(path)
 
       if (!file_exists(path)) {
-        stop("\U274C Raw file does not exist yet: ",  crayon::italic(path))
+        stop("\U274C Raw file does not exist: ",  crayon::italic(path))
       }
 
       # add history if it does not exist, otherwise check whether the history is up to date
