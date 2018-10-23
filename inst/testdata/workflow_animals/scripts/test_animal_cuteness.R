@@ -2,7 +2,7 @@ library(tibble)
 library(dplyr)
 library(tidyr)
 
-animal_cuteness <- readr::read_csv(inputs["animal_cuteness"])
+animal_cuteness <- readr::read_csv(inputs[["animal_cuteness"]])
 
 animal_cuteness_tests <- crossing(
   from = animal_cuteness$animal,
@@ -12,4 +12,4 @@ animal_cuteness_tests <- crossing(
     p_value = runif(n())
   )
 
-readr::write_csv(animal_cuteness_tests, outputs[1])
+readr::write_csv(animal_cuteness_tests, outputs[[1]])

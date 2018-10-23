@@ -12,6 +12,13 @@ Workflow <- R6Class(
     initialize = function(call_sets) {
       self$calls <- map(call_sets, "calls") %>% flatten()
 
+      # check calls
+      call_ids <- map(self$calls, "id")
+      if (any(duplicated(call_ids))) {
+        stop("Duplicated call ids: ", unique(call_ids[duplicated(call_ids)]))
+      }
+
+      # create the tibble of different calls and their status
       self$execution <- tibble(
         call = self$calls
       ) %>%

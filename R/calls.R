@@ -160,8 +160,8 @@ RscriptCall <- R6Class(
 
       # get input and output strings
       # first filter the script and executor out
-      input_strings <- self$inputs[-which(names(self$inputs) %in% c("script", "executor"))] %>% map_chr("string")
-      output_strings <- self$outputs %>% map_chr("string")
+      input_strings <- self$inputs[-which(names(self$inputs) %in% c("script", "executor"))] %>% map("string")
+      output_strings <- self$outputs %>% map("string")
 
       self$args <- c(
         "-e",

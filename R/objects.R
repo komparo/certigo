@@ -286,12 +286,13 @@ ObjectSet <- R6Class(
       self$objects <- objects
       object_strings <- map_chr(self$objects, "string")
       self$id <- digest::digest(object_strings, algo = "md5")
-      object_set_file <- paste0("./.certigo/object_sets/", self$id)
-      if (!file.exists(object_set_file)) {
-        dir_create(path_dir(object_set_file), recursive = TRUE)
-        jsonlite::write_json(object_strings, object_set_file)
-      }
-      self$string <- object_set_file
+      self$string <- object_strings
+      # object_set_file <- paste0("./.certigo/object_sets/", self$id)
+      # if (!file.exists(object_set_file)) {
+      #   dir_create(path_dir(object_set_file), recursive = TRUE)
+      #   jsonlite::write_json(object_strings, object_set_file)
+      # }
+      # self$string <- object_set_file
     }
   ),
   active = list(

@@ -76,12 +76,20 @@ always_error <- rscript_call(
   outputs = list(plot = derived_file("results/error.pdf"))
 )
 
+
+plotting <- call_collection(
+  "plotting",
+  plot_animal_cuteness,
+  plot_animal_cuteness_tests
+)
+
 animal_workflow <- workflow(
   list(
     determine_animal_cuteness,
     aggregate_animal_cuteness,
-    plot_animal_cuteness,
     test_animal_cuteness,
-    plot_animal_cuteness_tests
+    plotting
   )
 )
+
+animal_workflow$plot()

@@ -15,6 +15,15 @@ CallSet <- R6::R6Class(
 
       testthat::expect_equal(nrow(inputs), nrow(outputs))
 
+      # create dummy design if not given
+      if (is.null(design)) {
+        design <- tibble(id = paste0(id, "_", seq_len(nrow(inputs))))
+      } else if (!"id" %in% colnames(design)) {
+        design[["id"]] <- paste0(id, "_", seq_len(nrow(inputs)))
+      } else {
+        design[["id"]] <- paste0(id, "_", design[["id"]])
+      }
+
       # set inputs and outputs of this call set
       self$inputs <- inputs
       self$outputs <- outputs
@@ -26,9 +35,7 @@ CallSet <- R6::R6Class(
         outputs_row <- dynutils::extract_row_to_list(outputs, call_ix)
         design_row <- dynutils::extract_row_to_list(design, call_ix)
 
-        id_row <- paste0(id, "_", call_ix)
-
-        call_class$new(id_row, inputs_row, outputs_row, design_row)
+        call_class$new(design_row$id, inputs_row, outputs_row, design_row)
       })
     },
     start = function() {
@@ -67,3 +74,39 @@ process_objects <- function(x) {
     stop("Invalid inputs/outputs object")
   }
 }
+
+
+
+
+
+
+
+
+
+CallCollection <- R6::R6Class(
+  "CallCollection",
+  public = list(
+    calls = list(),
+    inputs = NULL,
+    outputs = NULL,
+    design = NULL,
+    initialize = function(id, ...) {
+      self$calls <- list(...) %>% map("calls") %>% flatten()
+      walk(self$calls, function(call) {
+        call$id <- paste0(id, "/", call$id)
+        call$design$id <- call$id
+      })
+
+      self$inputs <- self$calls %>% map("inputs") %>% dynutils::list_as_tibble()
+      self$outputs <- self$calls %>% map("outputs") %>% dynutils::list_as_tibble()
+      self$design <- self$calls %>% map("design") %>% dynutils::list_as_tibble()
+      self$design$id <- self$calls %>% map_chr("id")
+    }
+  )
+)
+
+#' Call collection
+#' @param id Id
+#' @param ... Call sets
+#' @export
+call_collection <- CallCollection$new
