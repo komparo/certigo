@@ -21,6 +21,9 @@ Object <- R6Class(
     },
     call_digest = function(...) {
       stop("Call digest not implemented for ", self$id)
+    },
+    individual = function(...) {
+      list(self)
     }
   )
 )
@@ -107,8 +110,8 @@ File <- R6Class(
         TRUE ~ fontawesome_map["file"]
       )
     },
-    digest = function(...) {
-      processx::run("md5sum", self$path)$stdout %>% gsub("([^ ]*).*", "\\1", .) %>% trimws()
+    digest = function(..., path = self$path) {
+      processx::run("md5sum", path)$stdout %>% gsub("([^ ]*).*", "\\1", .) %>% trimws()
     },
     modification_time = function() {
       fs::file_info(self$path)$modification_time
@@ -170,8 +173,24 @@ RawFile <- R6Class(
     initialize = function(path) {
       super$initialize(path)
 
+      # check if raw file exists
       if (!file_exists(path)) {
         stop("\U274C Raw file does not exist: ",  crayon::italic(path))
+      }
+
+      # if the file is not within the current working directory, place it in the .certigo folder
+      # as to make sure it gets mounted inside containers
+      if (!path_is_child(path, ".")) {
+        new_path <- paste0(".certigo/files/", self$digest)
+        if (!fs::file_exists(new_path)) {
+          fs::dir_create(fs::path_dir(new_path), recursive = TRUE)
+          fs::file_copy(
+            path,
+            new_path
+          )
+        }
+        path <- new_path
+        self$string <- path
       }
 
       # add history if it does not exist, otherwise check whether the history is up to date
@@ -279,7 +298,10 @@ ObjectSet <- R6Class(
     digest = function(...) {
       map_chr(self$objects, "digest") %>% digest::digest(algo = "md5")
     },
-    exists = function(...) map_lgl(self$objects, "exists") %>% all()
+    exists = function(...) map_lgl(self$objects, "exists") %>% all(),
+    individual = function(...) {
+      self$objects %>% map("individual") %>% flatten()
+    }
   )
 )
 
@@ -287,3 +309,13 @@ ObjectSet <- R6Class(
 #' @rdname object
 #' @export
 object_set <- ObjectSet$new
+
+
+
+
+
+
+
+path_is_child <- function(path, start = ".") {
+  startsWith(fs::path_abs(path), fs::path_real(start))
+}

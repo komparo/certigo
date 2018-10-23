@@ -27,12 +27,8 @@ determine_animal_cuteness <- rscript_call(
 aggregate_animal_cuteness <- rscript_call(
   "aggregate_animal_cuteness",
   inputs = tibble(
-    script = list(script_file("scripts/aggregate_animal_cuteness.R"))
-  ) %>% bind_cols(
-    set_names(
-      determine_animal_cuteness$outputs$animal_cuteness,
-      determine_animal_cuteness$outputs$animal_cuteness %>% map("id")
-    ) %>% map(list) %>% as_tibble()
+    script = list(script_file("scripts/aggregate_animal_cuteness.R")),
+    animal_cutenesses = list(object_set(determine_animal_cuteness$outputs$animal_cuteness))
   ),
   outputs = tibble(animal_cuteness = list(derived_file("derived/animal_cuteness.csv")))
 )

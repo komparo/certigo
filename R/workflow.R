@@ -19,7 +19,7 @@ Workflow <- R6Class(
 
       # get all (non-duplicated) objects
       objects_dupl <- map(self$calls, function(call) {
-        c(call$inputs, call$outputs)
+        c(call$inputs %>% map("individual") %>% flatten(), call$outputs %>% map("individual") %>% flatten())
       }) %>% flatten() %>% unname()
       object_ids <- objects_dupl %>% map_chr("id")
       objects <- objects_dupl[!duplicated(object_ids)]
@@ -44,12 +44,12 @@ Workflow <- R6Class(
       workflow_network <- self$calls %>% map(function(call) {
         workflow_network <- bind_rows(
           tibble(
-            from = call$inputs %>% map_chr("id"),
+            from = call$inputs %>% map("individual") %>% flatten() %>% map_chr("id"),
             to = call$id
           ),
           tibble(
             from = call$id,
-            to = call$outputs %>% map_chr("id")
+            to = call$outputs %>% map("individual") %>% flatten() %>% map_chr("id")
           )
         )
 
