@@ -8,8 +8,6 @@ call_collection(...)
 }
 \arguments{
 \item{...}{Call sets}
-
-\item{id}{Id}
 }
 \description{
 Call collection

@@ -106,7 +106,6 @@ CallCollection <- R6::R6Class(
 )
 
 #' Call collection
-#' @param id Id
 #' @param ... Call sets
 #' @export
 call_collection <- CallCollection$new
