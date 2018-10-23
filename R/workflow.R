@@ -56,8 +56,7 @@ Workflow <- R6Class(
         workflow_network
       }) %>% bind_rows()
 
-      requireNamespace("igraph")
-      requireNamespace("tidygraph")
+      requireNamespace("igraph", quietly = TRUE)
 
       # create the workflow graph
       self$workflow_graph <- workflow_graph <- igraph::graph_from_data_frame(workflow_network, vertices = workflow_nodes) %>%
