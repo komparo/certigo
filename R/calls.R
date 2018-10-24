@@ -107,7 +107,6 @@ Call <- R6Class(
         # if some output is not present, error
         existing_output <- find_existing_output()
         if (any(!existing_output)) {
-          browser()
           wait_time <- 1
           cat_line(col_split(self$id, crayon_warning("\U274C Not all output present, waiting", wait_time, "seconds")))
           Sys.sleep(wait_time)
@@ -174,9 +173,15 @@ RscriptCall <- R6Class(
       input_strings <- self$inputs[-which(names(self$inputs) %in% c("script", "executor"))] %>% map("string")
       output_strings <- self$outputs %>% map("string")
 
+      fs::dir_create(".certigo/object_sets", recursive = TRUE)
+      input_path <- tempfile(tmpdir = ".certigo/object_sets")
+      jsonlite::write_json(input_strings, input_path)
+      output_path <- tempfile(tmpdir = ".certigo/object_sets")
+      jsonlite::write_json(output_strings, output_path)
+
       self$args <- c(
         "-e",
-        glue::glue("inputs <- {deparse_friendly(input_strings)};outputs <- {deparse_friendly(output_strings)};pdf(NULL);source('{inputs$script$string}')")
+        glue::glue("inputs <- jsonlite::read_json('{input_path}', simplifyVector = TRUE);outputs <- jsonlite::read_json('{output_path}', simplifyVector = TRUE);pdf(NULL);source('{inputs$script$string}')")
       )
     },
     debug = function() {
