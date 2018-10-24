@@ -226,14 +226,14 @@ RmdCall <- R6Class(
       rmd_path <- inputs[["script"]]$string
       output_dir <- fs::path_dir(outputs[["rendered"]]$string)
       output_file <- fs::path_file(outputs[["rendered"]]$string)
-      knit_root_dir <- fs::path_abs(".")
 
       source_command <- glue::glue_collapse(glue::glue(
+        "knit_root_dir = fs::path_abs('.');",
         "rmarkdown::render(",
         "'{rmd_path}',",
         "output_dir = '{output_dir}',",
         "output_file = '{output_file}',",
-        "knit_root_dir = fs::path_abs('.')",
+        "knit_root_dir = knit_root_dir",
         ")"
       ))
 
