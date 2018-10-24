@@ -25,7 +25,7 @@ expect_rerun_somewhere <- function(x) {expect_output(x, ".*Finished.*", info = "
 expect_cached <- function(x) {expect_output(x, "^.*Cached$", info = "Expected a cached")}
 expect_cached_somewhere <- function(x) {expect_output(x, ".*Cached.*", info = "Expected a cached")}
 
-# function to reset
+# create and go to working directory
 create_workflow_dir()
 
 # create individual calls and call sets, and combine into a workflow

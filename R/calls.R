@@ -34,7 +34,7 @@ Call <- R6Class(
       if (!"executor" %in% names(inputs)) {
         inputs$executor <- local_executor()
       }
-      self$executor <- inputs$executor
+      self$executor <- inputs$executor$clone()
 
       # add inputs & outputs to self
       self$inputs <- inputs
@@ -107,8 +107,10 @@ Call <- R6Class(
         # if some output is not present, error
         existing_output <- find_existing_output()
         if (any(!existing_output)) {
-          cat_line(col_split(self$id, crayon_warning("\U274C Not all output present, waiting 1 second")))
-          Sys.sleep(1)
+          browser()
+          wait_time <- 1
+          cat_line(col_split(self$id, crayon_warning("\U274C Not all output present, waiting", wait_time, "seconds")))
+          Sys.sleep(wait_time)
 
           existing_output <- find_existing_output()
           if (any(!existing_output)) {

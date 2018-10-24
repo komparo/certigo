@@ -6,9 +6,9 @@ library(stringr)
 library(certigo)
 
 design <- tibble(
-  animal = c("dog", "cat", "horse"),
-  cuteness_mean = c(1, 0.9, 0.8),
-  n_animals = c(10, 20, 30)
+  animal = c("dog", "cat", "horse", "tortoise", "fly", "bird"),
+  cuteness_mean = c(1, 0.9, 0.8, 0.6, 0.1, 0.4),
+  n_animals = c(10, 20, 30, 10, 20, 30)
 )
 
 determine_animal_cuteness <- rscript_call(
@@ -16,7 +16,8 @@ determine_animal_cuteness <- rscript_call(
   design = design,
   inputs = design %>% transmute(
     parameters = design %>% dynutils::mapdf(parameters),
-    script = list(script_file("scripts/determine_animal_cuteness.R"))
+    script = list(script_file("scripts/determine_animal_cuteness.R")),
+    executor = list(docker_executor(container = "rocker/tidyverse"))
   ),
   outputs = design %>%
     transmute(
@@ -37,8 +38,7 @@ plot_animal_cuteness <- rscript_call(
   "plot_animal_cuteness",
   inputs = aggregate_animal_cuteness$outputs %>%
     mutate(
-      script = list(script_file("scripts/plot_animal_cuteness.R")),
-      executor = list(docker_executor("certigo/plot_animal_cuteness"))
+      script = list(script_file("scripts/plot_animal_cuteness.R"))
     ),
   outputs = list(
     plot = derived_file("results/animal_cuteness.pdf")

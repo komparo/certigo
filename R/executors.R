@@ -48,16 +48,18 @@ ProcessExecutor <- R6Class(
     wait = function() {
       if(!is.null(self$process)) {
         self$process$wait()
+        self$stop()
 
-        # read in the output and error
-        self$output <- self$process$read_all_output_lines()
-        self$error <- self$process$read_all_error_lines()
-        self$process$kill_tree()
       } else {
         # process was not started, just return nothing
       }
+      invisible()
     },
     stop = function() {
+      # read in the output and error
+      self$output <- self$process$read_all_output_lines()
+      self$error <- self$process$read_all_error_lines()
+      self$process$kill_tree()
     },
     reset = function() {
       self$process <- NULL
@@ -113,7 +115,7 @@ DockerExecutor <- R6Class(
         "run",
         "-v", glue::glue("{fs::path_abs('.')}:/data"),
         "-w", "/data",
-        "--rm=false",
+        "--rm",
         self$container,
         command,
         args
