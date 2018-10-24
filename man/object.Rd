@@ -7,6 +7,7 @@
 \alias{derived_file}
 \alias{raw_file}
 \alias{script_file}
+\alias{derived_directory}
 \alias{parameters}
 \alias{object_set}
 \title{Objects}
@@ -21,6 +22,8 @@ derived_file(...)
 raw_file(...)
 
 script_file(...)
+
+derived_directory(...)
 
 parameters(...)
 

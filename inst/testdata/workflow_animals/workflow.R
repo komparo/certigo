@@ -66,6 +66,16 @@ plot_animal_cuteness_tests <- rscript_call(
   outputs = list(plot = derived_file("results/animal_cuteness_tests.pdf"))
 )
 
+overview <- rmd_call(
+  "overview",
+  inputs = list(
+    script = script_file("scripts/overview.Rmd")
+  ),
+  outputs = list(
+    rendered = derived_file("results/overview.html")
+  )
+)
+
 always_error <- rscript_call(
   "always_error",
   inputs = bind_cols(
@@ -87,7 +97,8 @@ animal_workflow <- workflow(
   determine_animal_cuteness,
   aggregate_animal_cuteness,
   test_animal_cuteness,
-  plotting
+  plotting,
+  overview
 )
 
 animal_workflow$plot()

@@ -162,8 +162,14 @@ RscriptCall <- R6Class(
   "RscriptCall",
   inherit = Call,
   public = list(
-    command = paste0("R"),
-    initialize = function(id, inputs = list(), outputs = list(), design = NULL) {
+    command = "R",
+    initialize = function(
+      id,
+      inputs = list(),
+      outputs = list(),
+      design = NULL,
+      source_command = glue::glue("source('{inputs$script$string}')")
+    ) {
       testthat::expect_true("script" %in% names(inputs))
 
       super$initialize(id, inputs, outputs, design)
@@ -181,7 +187,7 @@ RscriptCall <- R6Class(
 
       self$args <- c(
         "-e",
-        glue::glue("inputs <- jsonlite::read_json('{input_path}', simplifyVector = TRUE);outputs <- jsonlite::read_json('{output_path}', simplifyVector = TRUE);pdf(NULL);source('{inputs$script$string}')")
+        glue::glue("inputs <- jsonlite::read_json('{input_path}', simplifyVector = TRUE);outputs <- jsonlite::read_json('{output_path}', simplifyVector = TRUE);pdf(NULL);{source_command}")
       )
     },
     debug = function() {
@@ -206,3 +212,43 @@ RscriptCall <- R6Class(
 #' @export
 #' @rdname call
 rscript_call <- calls_factory(RscriptCall)
+
+
+
+RmdCall <- R6Class(
+  "RmdCall",
+  inherit = RscriptCall,
+  public = list(
+    initialize = function(id, inputs, outputs, ...) {
+      testthat::expect_true("script" %in% names(inputs), info = "Should at least specify an 'script' as inputs")
+      testthat::expect_true("rendered" %in% names(outputs), info = "Should at least specify an 'rendered' as outputs")
+
+      rmd_path <- inputs[["script"]]$string
+      output_dir <- fs::path_dir(outputs[["rendered"]]$string)
+      output_file <- fs::path_file(outputs[["rendered"]]$string)
+      knit_root_dir <- fs::path_abs(".")
+
+      source_command <- glue::glue_collapse(glue::glue(
+        "rmarkdown::render(",
+        "'{rmd_path}',",
+        "output_dir = '{output_dir}',",
+        "output_file = '{output_file}',",
+        "knit_root_dir = fs::path_abs('.')",
+        ")"
+      ))
+
+      super$initialize(
+        id,
+        inputs,
+        outputs,
+        ...,
+        source_command = source_command
+      )
+    }
+  )
+)
+
+
+#' @export
+#' @rdname call
+rmd_call <- calls_factory(RmdCall)

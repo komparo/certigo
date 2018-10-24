@@ -4,12 +4,15 @@
 \name{Call}
 \alias{Call}
 \alias{rscript_call}
+\alias{rmd_call}
 \title{A call}
 \format{An object of class \code{R6ClassGenerator} of length 24.}
 \usage{
 Call
 
 rscript_call(id, inputs, outputs, design = NULL)
+
+rmd_call(id, inputs, outputs, design = NULL)
 }
 \arguments{
 \item{id}{The name of the call}

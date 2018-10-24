@@ -133,19 +133,19 @@ DerivedFile <- R6Class(
       super$initialize(path)
 
       # check the history if the derived file already exists
-      if (file_exists(path)) {
+      if (file_exists(self$path)) {
         if(!self$exists_history) {
-          cat_line(crayon_warning("\U26A0 No history present for derived file:",  crayon::italic(path), ", deleting the file."))
+          cat_line(crayon_warning("\U26A0 No history present for derived file:",  crayon::italic(self$path), ", deleting the file."))
           self$delete()
         } else {
           history <- self$read_history()
           if (!"call_digest" %in% names(history)) {
-            cat_line(crayon_warning("\U26A0 No call digest present for derived file:", crayon::italic(path), ", deleting the file."))
+            cat_line(crayon_warning("\U26A0 No call digest present for derived file:", crayon::italic(self$path), ", deleting the file."))
             self$delete()
           }
         }
       } else if (self$exists_history) {
-        cat_line(crayon_warning("\U26A0 History present, but not the derived file:",  crayon::italic(path), ", deleting the file."))
+        cat_line(crayon_warning("\U26A0 History present, but not the derived file:",  crayon::italic(self$path), ", deleting the file."))
         self$delete()
       }
     }
@@ -225,6 +225,48 @@ ScriptFile <- R6Class(
 #' @rdname object
 #' @export
 script_file <- ScriptFile$new
+
+
+
+
+
+DerivedDirectory <- R6Class(
+  "DerivedDirectory",
+  inherit = DerivedFile,
+  public = list(
+    initialize = function(path) {
+      # make sure the path of this folder ends with "/." so that fs::path_dir will retain the directory
+      path <- paste0(fs::path_norm(path), "/.")
+      super$initialize(path)
+    }
+  ),
+  active = list(
+    digest = function(..., path = self$path) {
+      # very dirt way to get a "digest" of a path
+      # we should actually look at file contents here...
+      # https://unix.stackexchange.com/questions/35832/how-do-i-get-the-md5-sum-of-a-directorys-contents-as-one-sum
+      fs::dir_info(path, recursive = TRUE) %>%
+        select(path, size) %>%
+        arrange(size) %>%
+        digest::digest("md5")
+    },
+    modification_time = function() {
+      fs::dir_info(path, recursive = TRUE) %>%
+        pull(modification_time) %>%
+        max()
+    }
+  )
+)
+
+#' @rdname object
+#' @export
+derived_directory <- DerivedDirectory$new
+
+
+
+
+
+
 
 
 
