@@ -16,7 +16,6 @@ CallSet <- R6::R6Class(
       testthat::expect_equal(nrow(inputs), nrow(outputs))
 
       # create dummy design if not given
-
       if (is.null(design)) {
         design <- tibble(id = paste0(id, "_", seq_len(nrow(inputs))))
       }

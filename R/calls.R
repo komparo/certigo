@@ -93,20 +93,29 @@ Call <- R6Class(
         }
 
         # check whether output is present
-        existing_output <- map_lgl(self$outputs, function(output) {
-          if (TRUE && !output$exists) {
-            cat_line(col_split(self$id, crayon_error("\U274C Output does not exist: ", output$id)))
-            FALSE
-          } else {
-            TRUE
-          }
-        })
+        find_existing_output <- function() {
+          existing_output <- map_lgl(self$outputs, function(output) {
+            if (TRUE && !output$exists) {
+              cat_line(col_split(self$id, crayon_warning("\U274C Output does not exist: ", output$id)))
+              FALSE
+            } else {
+              TRUE
+            }
+          })
+        }
 
         # if some output is not present, error
+        existing_output <- find_existing_output()
         if (any(!existing_output)) {
-          cat_line(col_split(self$id, crayon_error("\U274C Output")))
-          map(self$outputs, "delete") %>% invoke_map()
-          stop("Some output not present but required")
+          cat_line(col_split(self$id, crayon_warning("\U274C Not all output present, waiting 1 second")))
+          Sys.sleep(1)
+
+          existing_output <- find_existing_output()
+          if (any(!existing_output)) {
+            cat_line(col_split(self$id, crayon_error("\U274C Output")))
+            map(self$outputs, "delete") %>% invoke_map()
+            stop("Some output not present but required")
+          }
         }
 
         # write all output histories including the digest of the call
