@@ -9,8 +9,8 @@ Workflow <- R6Class(
     workflow_graph = NULL,
     call_dependencies = NULL,
     execution = NULL,
-    initialize = function(call_sets) {
-      self$calls <- map(call_sets, "calls") %>% flatten()
+    initialize = function(...) {
+      self$calls <- map(list(...), "calls") %>% flatten()
 
       # check call ids
       call_ids <- map(self$calls, "id")

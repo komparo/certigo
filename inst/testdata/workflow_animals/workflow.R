@@ -84,12 +84,10 @@ plotting <- call_collection(
 )
 
 animal_workflow <- workflow(
-  list(
-    determine_animal_cuteness,
-    aggregate_animal_cuteness,
-    test_animal_cuteness,
-    plotting
-  )
+  determine_animal_cuteness,
+  aggregate_animal_cuteness,
+  test_animal_cuteness,
+  plotting
 )
 
 animal_workflow$plot()
