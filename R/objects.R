@@ -73,6 +73,7 @@ File <- R6Class(
     path = NULL,
     last_change_time = NULL,
     last_digest = NULL,
+    history_path = NULL,
     initialize = function(path) {
       if (is.null(path)) {stop("Path cannot be null")}
 
@@ -81,11 +82,12 @@ File <- R6Class(
       self$path <- path
       self$id <- path
       self$string <- path
+      self$history_path <- history_path(path)
 
       dir_create(path_dir(path), recursive = TRUE)
     },
     read_history = function() {
-      jsonlite::read_json(history_path(self$path), simplifyVector = TRUE)
+      jsonlite::read_json(self$history_path, simplifyVector = TRUE)
     },
     write_history = function(...) {
       history <- list(
@@ -111,7 +113,19 @@ File <- R6Class(
       )
     },
     digest = function(..., path = self$path) {
-      processx::run("md5sum", path)$stdout %>% gsub("([^ ]*).*", "\\1", .) %>% trimws()
+      digest <- NULL
+      if (self$exists_history) {
+        history <- self$read_history()
+        if (as.character(self$modification_time) == history[["modification_time"]]) {
+          digest <- history[["digest"]]
+        }
+      }
+
+      if (is.null(digest)) {
+        digest <- processx::run("md5sum", path)$stdout %>% gsub("([^ ]*).*", "\\1", .) %>% trimws()
+      }
+
+      digest
     },
     modification_time = function() {
       fs::file_info(self$path)$modification_time
@@ -120,7 +134,7 @@ File <- R6Class(
       file_exists(self$path)
     },
     exists_history = function() {
-      file_exists(history_path(self$path))
+      file_exists(self$history_path)
     }
   )
 )
