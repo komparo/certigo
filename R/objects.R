@@ -326,7 +326,15 @@ ObjectSet <- R6Class(
     objects = list(),
     initialize = function(objects) {
       self$objects <- objects
-      object_strings <- map_chr(self$objects, "string")
+
+      # get the strings of each object
+      object_strings <- map(self$objects, "string")
+
+      # simplify to a character vector if all objects are not sets themselves
+      if (!any(map_lgl(self$objects, ~"ObjectSet" %in% class(.)))) {
+        object_strings <- as.character(object_strings)
+      }
+
       self$id <- digest::digest(object_strings, algo = "md5")
       self$string <- object_strings
       # object_set_file <- paste0("./.certigo/object_sets/", self$id)
