@@ -73,9 +73,6 @@ expect_true(fs::file_exists("results/overview.html"))
 create_workflow_dir()
 source(system.file("testdata/workflow_animals/workflow.R", package = "certigo"))
 
-animal_workflow$reset()
-animal_workflow$run()
-
 expect_rerun_somewhere(animal_workflow$run())
 animal_workflow$reset()
 expect_cached_somewhere(animal_workflow$run())
