@@ -27,8 +27,8 @@ design <- tibble(
 determine_animal_cuteness <- rscript_call(
   "determine_animal_cuteness",
   design = design,
-  inputs = design %>% select(parameters, script, executor),
-  outputs = design %>% select(animal_cuteness)
+  inputs = c("parameters", "script", "executor"),
+  outputs = "animal_cuteness"
 )
 
 aggregate_animal_cuteness <- rscript_call(
@@ -38,61 +38,67 @@ aggregate_animal_cuteness <- rscript_call(
     script = script_file("scripts/aggregate_animal_cuteness.R"),
     animal_cuteness = derived_file("derived/animal_cuteness.csv")
   ),
-  inputs = design[c("script", "animal_cuteness_individual")],
-  outputs = design["animal_cuteness"]
+  inputs = c("script", "animal_cuteness_individual"),
+  outputs = "animal_cuteness"
 )
 
 plot_animal_cuteness <- rscript_call(
   "plot_animal_cuteness",
-  inputs = aggregate_animal_cuteness$outputs %>%
+  design = aggregate_animal_cuteness$design %>%
+    select(animal_cuteness) %>%
     mutate(
-      script = list(script_file("scripts/plot_animal_cuteness.R"))
+      script = list(script_file("scripts/plot_animal_cuteness.R")),
+      plot = list(derived_file("results/animal_cuteness.pdf"))
     ),
-  outputs = list(
-    plot = derived_file("results/animal_cuteness.pdf")
-  )
+  inputs = c("script", "animal_cuteness"),
+  outputs = "plot"
 )
 
 test_animal_cuteness <- rscript_call(
   "test_animal_cuteness",
-  inputs = list(
-    script = script_file("scripts/test_animal_cuteness.R"),
-    animal_cuteness = derived_file("derived/animal_cuteness.csv")
-  ),
-  outputs = list(tests = derived_file("derived/animal_cuteness_tests.csv"))
+  design = aggregate_animal_cuteness$design %>%
+    select(animal_cuteness) %>%
+    mutate(
+      script = list(script_file("scripts/test_animal_cuteness.R")),
+      animal_cuteness_tests = list(derived_file("derived/animal_cuteness_tests.csv"))
+    ),
+  inputs = c("script", "animal_cuteness"),
+  outputs = "animal_cuteness_tests"
 )
-
 
 plot_animal_cuteness_tests <- rscript_call(
   "plot_animal_cuteness_tests",
-  inputs = bind_cols(
+  design = bind_cols(
     aggregate_animal_cuteness$outputs,
     test_animal_cuteness$outputs
   ) %>% mutate(
-    script = list(script_file("scripts/plot_animal_cuteness_tests.R"))
+    script = list(script_file("scripts/plot_animal_cuteness_tests.R")),
+    plot = list(derived_file("results/animal_cuteness_tests.pdf"))
   ),
-  outputs = list(plot = derived_file("results/animal_cuteness_tests.pdf"))
+  inputs = c("script", "animal_cuteness", "animal_cuteness_tests"),
+  outputs = "plot"
 )
 
 overview <- rmd_call(
   "overview",
-  inputs = list(
+  design = list(
     script = script_file("scripts/overview.Rmd"),
-    executor = docker_executor("rocker/tidyverse")
-  ),
-  outputs = list(
+    executor = docker_executor("rocker/tidyverse"),
     rendered = derived_file("results/overview.html")
-  )
+  ),
+  inputs = c("script", "executor"),
+  outputs = c("rendered")
 )
 
 always_error <- rscript_call(
   "always_error",
-  inputs = bind_cols(
-    aggregate_animal_cuteness$outputs
-  ) %>% mutate(
-    script = list(script_file("scripts/always_error.R"))
-  ),
-  outputs = list(plot = derived_file("results/error.pdf"))
+  design =  aggregate_animal_cuteness$outputs %>%
+    mutate(
+      script = list(script_file("scripts/always_error.R")),
+      plot = list(derived_file("results/error.pdf"))
+    ),
+  inputs = c("animal_cuteness", "script"),
+  outputs = c("plot")
 )
 
 

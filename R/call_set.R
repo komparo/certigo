@@ -2,44 +2,28 @@ CallSet <- R6::R6Class(
   "CallSet",
   public = list(
     calls = list(),
-    id = NULL,
-    inputs = NULL,
-    outputs = NULL,
     design = NULL,
-    initialize = function(id, call_class, design = NULL, inputs, outputs) {
+    id = NULL,
+    input_ids = NULL,
+    output_ids = NULL,
+    initialize = function(id, call_class, design, input_ids, output_ids) {
       self$id <- id
 
-      inputs <- rlang::eval_tidy(inputs, data = list(design = design))
-      outputs <- rlang::eval_tidy(outputs, data = list(design = design))
-
-      # check inputs and outputs tibbles
-      inputs <- process_objects(inputs)
-      outputs <- process_objects(outputs)
-
-      testthat::expect_equal(nrow(inputs), nrow(outputs))
-
-      # create dummy design if not given
-      if (is.null(design)) {
-        design <- tibble(id = paste0(id, "_", seq_len(nrow(inputs))))
-      }
-      design$id <- paste0(id, "_", seq_len(nrow(inputs)))
-
       design <- process_objects(design)
+      design$id <- paste0(id, "_", seq_len(nrow(design)))
 
-      testthat::expect_equal(nrow(design), nrow(outputs))
+      testthat::expect_true(all(input_ids %in% names(design)))
+      testthat::expect_true(all(output_ids %in% names(design)))
 
-      # set inputs and outputs of this call set
-      self$inputs <- inputs
-      self$outputs <- outputs
       self$design <- design
+      self$input_ids <- input_ids
+      self$output_ids <- output_ids
 
       # create calls
-      self$calls <- map(seq_len(nrow(inputs)), function(call_ix) {
-        inputs_row <- dynutils::extract_row_to_list(inputs, call_ix)
-        outputs_row <- dynutils::extract_row_to_list(outputs, call_ix)
-        design_row <- dynutils::extract_row_to_list(design, call_ix)
+      self$calls <- pmap(design, function(...) {
+        design_row <- list(...)
 
-        call_class$new(design_row$id, inputs_row, outputs_row, design_row)
+        call_class$new(design_row$id, inputs = design_row[self$input_ids], outputs = design_row[self$output_ids])
       })
     },
     start = function() {
@@ -57,14 +41,18 @@ CallSet <- R6::R6Class(
     debug = function() {
       self$calls[[1]]$debug()
     }
+  ),
+  active = list(
+    inputs = function(...) self$design %>% select(!!self$input_ids),
+    outputs = function(...) self$design %>% select(!!self$output_ids)
   )
 )
 
 calls_factory <- function(class) {
   function(id, inputs, outputs, design = NULL) {
-    inputs <- rlang::enquo(inputs)
-    outputs <- rlang::enquo(outputs)
-    CallSet$new(id, class, inputs, outputs, design = design)
+    # input_ids <- rlang::enquo(inputs)
+    # output_ids <- rlang::enquo(outputs)
+    CallSet$new(id, class, design, input_ids = inputs, output_ids = outputs)
   }
 }
 
