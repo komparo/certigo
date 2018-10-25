@@ -69,7 +69,8 @@ plot_animal_cuteness_tests <- rscript_call(
 overview <- rmd_call(
   "overview",
   inputs = list(
-    script = script_file("scripts/overview.Rmd")
+    script = script_file("scripts/overview.Rmd"),
+    executor = docker_executor("rocker/tidyverse")
   ),
   outputs = list(
     rendered = derived_file("results/overview.html")
