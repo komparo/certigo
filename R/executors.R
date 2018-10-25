@@ -116,6 +116,7 @@ DockerExecutor <- R6Class(
         "-v", glue::glue("{fs::path_abs('.')}:/data"),
         "-w", "/data",
         "--rm",
+        "-u", "1000",
         self$container,
         command,
         args
