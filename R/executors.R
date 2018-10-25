@@ -105,10 +105,12 @@ DockerExecutor <- R6Class(
   inherit = ProcessExecutor,
   public = list(
     container = NULL,
+    user_id = "1000",
     initialize = function(container = "rocker/tidyverse") {
       self$container <- container
       self$string <- container
       self$id <- paste0("docker: ", container)
+      self$user_id <- system("id -u", intern = TRUE)
     },
     start = function(command, args) {
       args <- c(
@@ -116,7 +118,7 @@ DockerExecutor <- R6Class(
         "-v", glue::glue("{fs::path_abs('.')}:/data"),
         "-w", "/data",
         "--rm",
-        "-u", "1000",
+        "-u", self$user_id,
         self$container,
         command,
         args
