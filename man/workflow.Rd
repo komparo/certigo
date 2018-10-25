@@ -3,12 +3,18 @@
 \docType{data}
 \name{Workflow}
 \alias{Workflow}
-\title{A certigo workflow}
+\alias{workflow}
+\title{A workflow}
 \format{An object of class \code{R6ClassGenerator} of length 24.}
 \usage{
 Workflow
+
+workflow(...)
+}
+\arguments{
+\item{...}{Extra arguments to the call, such as inputs, outputs, script, ...}
 }
 \description{
-A certigo workflow
+A workflow
 }
 \keyword{datasets}

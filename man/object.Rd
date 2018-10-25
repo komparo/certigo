@@ -3,22 +3,31 @@
 \docType{data}
 \name{Object}
 \alias{Object}
-\alias{docker_container}
+\alias{docker}
 \alias{derived_file}
 \alias{raw_file}
 \alias{script_file}
+\alias{derived_directory}
+\alias{parameters}
+\alias{object_set}
 \title{Objects}
 \format{An object of class \code{R6ClassGenerator} of length 24.}
 \usage{
 Object
 
-docker_container(...)
+docker(...)
 
 derived_file(...)
 
 raw_file(...)
 
 script_file(...)
+
+derived_directory(...)
+
+parameters(...)
+
+object_set(...)
 }
 \arguments{
 \item{...}{...}

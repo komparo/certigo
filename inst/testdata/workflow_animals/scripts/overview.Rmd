@@ -1,0 +1,22 @@
+---
+title: "Animals"
+output: 
+  html_document:
+    self_contained: FALSE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+![](https://awionline.org/sites/default/files/styles/homepage_header_rotator/public/slide/image/AWI-eAlert-alaskabear-flickr-ChristophStr%C3%A4ssler.jpg?itok=OOv-d0lm)
+
+```{r}
+library(ggplot2)
+library(tibble)
+library(dplyr)
+tibble(x = 1:3, y = 2:4) %>% 
+  ggplot(aes(x, y)) +
+    geom_point()
+```
+

@@ -1,100 +1,83 @@
 library(testthat)
 library(fs)
-library(dplyr)
-library(readr)
 
 context("Testing workflow animals")
 
 # go to temporary directory and copy over all files
-oldwd <- getwd()
-tempdir <- tempfile()
-dir.create(tempdir)
-dir_copy(system.file("testdata/workflow_animals", package = "certigo"), tempdir)
-setwd(paste0(tempdir, "/workflow_animals"))
+create_workflow_dir <- function() {
+  oldwd <- getwd()
+  # on.exit({setwd(oldwd)})
+  tempdir <- tempfile()
+  dir.create(tempdir)
+  dir_copy(system.file("testdata/workflow_animals", package = "certigo"), tempdir)
+  setwd(paste0(tempdir, "/workflow_animals"))
 
-expect_rerun <- function(x) {expect_output(x, "^.*\n.*$", info = "Expected a rerun")}
-expect_norerun <- function(x) {expect_output(x, "^[^\n]*$", info = "Expected a no rerun")}
+  # recopy scripts
+  file_copy(dir_ls(system.file("testdata/workflow_animals/scripts", package = "certigo")), "./scripts/", overwrite = T)
+}
 
-# build initial workflow
-workflow <- Workflow$new(list(
-  rscript_call(
-    "determine_animal_coolness",
-    script_file("scripts/determine_animal_coolness.R"),
-    outputs = list(derived_file("intermediate/animal_coolness.tsv"))
-  ),
-  rscript_call(
-    "plot_animal_coolness",
-    script_file("scripts/plot_animal_coolness.R"),
-    inputs = list(derived_file("intermediate/animal_coolness.tsv")),
-    outputs = list(derived_file("results/animal_coolness.pdf"))
-  ),
-  rscript_call(
-    "test_animal_coolness",
-    script_file("scripts/test_animal_coolness.R"),
-    inputs = list(derived_file("intermediate/animal_coolness.tsv")),
-    outputs = list(derived_file("intermediate/animal_coolness_tests.csv"))
-  ),
-  rscript_call(
-    "plot_animal_coolness_tests",
-    script_file("scripts/plot_animal_coolness_tests.R"),
-    inputs = list(derived_file("intermediate/animal_coolness.tsv"), derived_file("intermediate/animal_coolness_tests.csv")),
-    outputs = list(derived_file("results/animal_coolness_tests.pdf"))
-  )
-))
+# build the docker image
+processx::run("docker", c("build", "-t", "certigo/plot_animal_cuteness", system.file('testdata/workflow_animals/containers/plot_animal_cuteness/', package = 'certigo')), echo = F)
 
+# some testing functions
+expect_rerun <- function(x) {expect_output(x, "^.*Finished$", info = "Expected a rerun")}
+expect_rerun_somewhere <- function(x) {expect_output(x, ".*Finished.*", info = "Expected a rerun")}
+expect_cached <- function(x) {expect_output(x, "^.*Cached$", info = "Expected a cached")}
+expect_cached_somewhere <- function(x) {expect_output(x, ".*Cached.*", info = "Expected a cached")}
 
-expect_rerun(workflow$run_calls())
+# create and go to working directory
+create_workflow_dir()
 
-test_that("Derived files are being created", {
-  expect_true(file_exists("results/animal_coolness.pdf"))
-  expect_true(file_exists("intermediate/animal_coolness.tsv"))
-})
+# create individual calls and call sets, and combine into a workflow
+source(system.file("testdata/workflow_animals/workflow.R", package = "certigo"))
 
-test_that("Nothing gets rerun when rerunning with runs_exited", {
-  expect_norerun(workflow$run_calls())
-})
+##  ............................................................................
+##  Test individual calls                                                   ####
+expect_rerun(determine_animal_cuteness$start_and_wait())
 
-test_that("When previously output dissapears or changes, need to rerun", {
-  file_delete("results/animal_coolness.pdf")
-  expect_rerun(workflow$run_calls())
-  expect_true(file_exists("results/animal_coolness.pdf"))
+# cached
+expect_cached(determine_animal_cuteness$start_and_wait())
 
-  file_move("results/animal_coolness.pdf", "results/animal_coolness.png")
-  expect_rerun(workflow$run_calls())
-  expect_true(file_exists("results/animal_coolness.pdf"))
-})
+# deleted output -> rerun
+determine_animal_cuteness$outputs$animal_cuteness[[1]]$delete()
+expect_rerun(determine_animal_cuteness$start_and_wait())
 
-test_that("When an input or dissapears changes, need to rerun", {
-  read_file("scripts/determine_animal_coolness.R") %>% gsub("dog", "giraffe", .) %>% write_file("scripts/determine_animal_coolness.R")
-  expect_rerun(workflow$run_calls())
+# run with multiple inputs
+expect_rerun(aggregate_animal_cuteness$start_and_wait())
 
-  file_delete("intermediate/animal_coolness.tsv")
-  expect_rerun(workflow$run_calls())
+# test docker execution
+expect_rerun(plot_animal_cuteness$start_and_wait())
+expect_true(file_exists(plot_animal_cuteness$outputs$plot[[1]]$string))
 
-  read_file("intermediate/animal_coolness.tsv") %>% gsub("cat", "meow", .) %>% write_file("intermediate/animal_coolness.tsv")
-  expect_rerun(workflow$run_calls())
-})
+# no input -> error + deleted output
+aggregate_animal_cuteness$outputs$animal_cuteness[[1]]$delete()
+expect_error(capture_output(plot_animal_cuteness$start_and_wait()))
+expect_false(file_exists(plot_animal_cuteness$outputs$plot[[1]]$string))
 
-test_that("When workflow changes, need to rerun", {
-  workflow <- Workflow$new(list(
-    rscript_call(
-      "determine_animal_coolness",
-      script_file("scripts/determine_animal_coolness.R"),
-      outputs = list(derived_file("derived/animal_coolness.tsv"))
-    ),
-    rscript_call(
-      "plot_animal_coolness",
-      script_file("scripts/plot_animal_coolness.R"),
-      inputs = list(derived_file("derived/animal_coolness.tsv")),
-      outputs = list(derived_file("derived/animal_coolness.png"))
-    )
-  ), runs_exited = workflow$runs_exited)
+# input is again present -> rerun
+expect_rerun(aggregate_animal_cuteness$start_and_wait())
+expect_rerun(plot_animal_cuteness$start_and_wait())
 
-  expect_rerun(workflow$run_calls())
-})
+# test some other calls
+expect_rerun(test_animal_cuteness$start_and_wait())
 
-test_that("Workflow can be plotted", {
-  expect_is(workflow$plot_workflow(), "ggplot")
-})
+expect_rerun(plot_animal_cuteness_tests$start_and_wait())
 
-setwd(oldwd)
+expect_error(capture_output(always_error$start_and_wait()))
+
+expect_rerun(overview$start_and_wait())
+expect_true(fs::file_exists("results/overview.html"))
+
+##  ............................................................................
+##  Test workflow                                                           ####
+create_workflow_dir()
+source(system.file("testdata/workflow_animals/workflow.R", package = "certigo"))
+
+animal_workflow$reset()
+expect_rerun_somewhere(animal_workflow$run())
+animal_workflow$reset()
+expect_cached_somewhere(animal_workflow$run())
+
+##  ............................................................................
+##  Cleanup                                                                 ####
+setwd(system.file(package = "certigo"))

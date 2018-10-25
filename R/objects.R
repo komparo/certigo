@@ -8,30 +8,35 @@ Object <- R6Class(
   "Object",
   public = list(
     id = NULL,
-    string = "",
-    status = function() {
-      case_when(
-        is.na(self$digest) ~ "not_present",
-        TRUE ~ "present"
-      )
-    }
+    string = NULL,
+    history = NULL,
+    write_history = function(call_digest) {stop("Write history not implemented for", self$id)}
   ),
   active = list(
     digest = function() {
-      stop("Digest not implemented")
+      stop("Digest not implemented for", self$id)
+    },
+    exists = function(...) {
+      stop("Exists not implemented for ", self$id)
+    },
+    call_digest = function(...) {
+      stop("Call digest not implemented for ", self$id)
+    },
+    individual = function(...) {
+      list(self)
     }
   )
 )
 
-DockerContainer <- R6Class(
-  "DockerContainer",
+Docker <- R6Class(
+  "Docker",
   inherit = Object,
   public = list(
     image = NULL,
     initialize = function(image) {
       self$image <- image
       self$id <- image
-      self$string <- path
+      self$string <- image
     }
   ),
   active = list(
@@ -40,6 +45,10 @@ DockerContainer <- R6Class(
       process <- processx::run("docker", c("inspect", "--format={{.ID}}", self$image))
 
       process$stdout %>% trimws()
+    },
+    exists = function() {
+      process <- processx::run("docker", c("inspect", "--format={{.ID}}", self$image), error_on_status = FALSE)
+      process$status == 0
     }
   )
 )
@@ -47,7 +56,15 @@ DockerContainer <- R6Class(
 
 #' @rdname object
 #' @export
-docker_container <- DockerContainer$new
+docker <- Docker$new
+
+history_path <- function(path) {
+  paste0(
+    path_dir(path),
+    paste0("/.", path_file(path)),
+    ".history"
+  )
+}
 
 File <- R6Class(
   "File",
@@ -56,13 +73,33 @@ File <- R6Class(
     path = NULL,
     last_change_time = NULL,
     last_digest = NULL,
-    file_required = TRUE,
+    history_path = NULL,
     initialize = function(path) {
+      if (is.null(path)) {stop("Path cannot be null")}
+
+      path <- fs::path_norm(path) # cleanup path (eg. remove "//", or remove "./")
+
       self$path <- path
       self$id <- path
       self$string <- path
+      self$history_path <- history_path(path)
 
       dir_create(path_dir(path), recursive = TRUE)
+    },
+    read_history = function() {
+      jsonlite::read_json(self$history_path, simplifyVector = TRUE)
+    },
+    write_history = function(...) {
+      history <- list(
+        digest = self$digest,
+        modification_time = self$modification_time
+      )
+      history <- list_modify(history, ...)
+      jsonlite::write_json(history, history_path(self$path))
+    },
+    delete = function() {
+      if (file_exists(self$path)) file_delete(self$path)
+      if (self$exists_history) file_delete(history_path(self$path))
     }
   ),
   active = list(
@@ -75,21 +112,29 @@ File <- R6Class(
         TRUE ~ fontawesome_map["file"]
       )
     },
-    digest = function(...) {
-      # check if file is present if required (eg. for raw files)
-      if (self$file_required) {
-        if (!file.exists(self$path)) {stop(glue::glue("{self$path} -> does not exist"))}
-      } else {
-        if (!file.exists(self$path)) {return(NA)}
+    digest = function(..., path = self$path) {
+      digest <- NULL
+      if (self$exists_history) {
+        history <- self$read_history()
+        if (as.character(self$modification_time) == history[["modification_time"]]) {
+          digest <- history[["digest"]]
+        }
       }
 
-      # use change time to cache result
-      current_change_time <- fs::file_info(self$path)$change_time
-      if (is.null(self$last_change_time) || current_change_time > self$last_change_time) {
-        self$last_digest <- processx::run("md5sum", self$path)$stdout %>% gsub("([^ ]*).*", "\\1", .) %>% trimws()
+      if (is.null(digest)) {
+        digest <- processx::run("md5sum", path)$stdout %>% gsub("([^ ]*).*", "\\1", .) %>% trimws()
       }
-      self$last_change_time <- current_change_time
-      self$last_digest
+
+      digest
+    },
+    modification_time = function() {
+      fs::file_info(self$path)$modification_time
+    },
+    exists = function() {
+      file_exists(self$path)
+    },
+    exists_history = function() {
+      file_exists(self$history_path)
     }
   )
 )
@@ -98,9 +143,34 @@ DerivedFile <- R6Class(
   "DerivedFile",
   inherit = File,
   public = list(
-    file_required = FALSE,
     initialize = function(path) {
       super$initialize(path)
+
+      # check the history if the derived file already exists
+      if (file_exists(self$path)) {
+        if(!self$exists_history) {
+          cat_line(crayon_warning("\U26A0 No history present for derived file:",  crayon::italic(self$path), ", deleting the file."))
+          self$delete()
+        } else {
+          history <- self$read_history()
+          if (!"call_digest" %in% names(history)) {
+            cat_line(crayon_warning("\U26A0 No call digest present for derived file:", crayon::italic(self$path), ", deleting the file."))
+            self$delete()
+          }
+        }
+      } else if (self$exists_history) {
+        cat_line(crayon_warning("\U26A0 History present, but not the derived file:",  crayon::italic(self$path), ", deleting the file."))
+        self$delete()
+      }
+    }
+  ),
+  active = list(
+    call_digest = function(...) {
+      if (self$exists_history) {
+        self$read_history()$call_digest
+      } else {
+        NA
+      }
     }
   )
 )
@@ -116,6 +186,37 @@ RawFile <- R6Class(
   public = list(
     initialize = function(path) {
       super$initialize(path)
+
+      # check if raw file exists
+      if (!file_exists(path)) {
+        stop("\U274C Raw file does not exist: ",  crayon::italic(path))
+      }
+
+      # if the file is not within the current working directory, place it in the .certigo folder
+      # as to make sure it gets mounted inside containers
+      if (!path_is_child(path, ".")) {
+        new_path <- paste0(".certigo/files/", self$digest)
+        if (!fs::file_exists(new_path)) {
+          fs::dir_create(fs::path_dir(new_path), recursive = TRUE)
+          fs::file_copy(
+            path,
+            new_path
+          )
+        }
+        path <- new_path
+        self$string <- path
+      }
+
+      # add history if it does not exist, otherwise check whether the history is up to date
+      if (!self$exists_history) {
+        message("\U23F0 Adding ", crayon::italic(path))
+        self$write_history()
+      } else {
+        history <- self$read_history()
+        if (history$modification_time != self$modification_time) {
+          self$write_history()
+        }
+      }
     }
   )
 )
@@ -138,3 +239,148 @@ ScriptFile <- R6Class(
 #' @rdname object
 #' @export
 script_file <- ScriptFile$new
+
+
+
+
+
+DerivedDirectory <- R6Class(
+  "DerivedDirectory",
+  inherit = DerivedFile,
+  public = list(
+    initialize = function(path) {
+      # make sure the path of this folder ends with "/." so that fs::path_dir will retain the directory
+      path <- paste0(fs::path_norm(path), "/.")
+      super$initialize(path)
+    }
+  ),
+  active = list(
+    digest = function(..., path = self$path) {
+      # very dirt way to get a "digest" of a path
+      # we should actually look at file contents here...
+      # https://unix.stackexchange.com/questions/35832/how-do-i-get-the-md5-sum-of-a-directorys-contents-as-one-sum
+      fs::dir_info(path, recursive = TRUE) %>%
+        select(path, size) %>%
+        arrange(size) %>%
+        digest::digest("md5")
+    },
+    modification_time = function() {
+      fs::dir_info(path, recursive = TRUE) %>%
+        pull(modification_time) %>%
+        max()
+    }
+  )
+)
+
+#' @rdname object
+#' @export
+derived_directory <- DerivedDirectory$new
+
+
+
+
+
+
+
+
+
+
+
+
+Parameters <- R6Class(
+  "Parameters",
+  inherit = Object,
+  public = list(
+    parameters = NULL,
+    initialize = function(parameters) {
+      # sort if named, so that even when the order changes, the hash will stay the same
+      if(!is.null(names(parameters))) {
+        parameters <- parameters[sort(names(parameters))]
+      }
+
+      self$parameters <- parameters
+      self$id <- digest <- self$digest
+
+      parameters_file <- paste0("./.certigo/parameters/", digest)
+      if (!file.exists(parameters_file)) {
+        dir_create(path_dir(parameters_file), recursive = TRUE)
+        jsonlite::write_json(parameters, parameters_file)
+      }
+      self$string <- parameters_file
+    }
+  ),
+  active = list(
+    digest = function(...) {
+      digest::digest(self$parameters, algo = "md5")
+    },
+    exists = function(...) TRUE
+  )
+)
+
+
+#' @rdname object
+#' @export
+parameters <- Parameters$new
+
+
+
+
+
+
+
+
+
+
+
+
+ObjectSet <- R6Class(
+  "ObjectSet",
+  inherit = Object,
+  public = list(
+    objects = list(),
+    initialize = function(objects) {
+      self$objects <- objects
+
+      # get the strings of each object
+      object_strings <- map(self$objects, "string")
+
+      # simplify to a character vector if all objects are not sets themselves
+      if (!any(map_lgl(self$objects, ~"ObjectSet" %in% class(.)))) {
+        object_strings <- as.character(object_strings)
+      }
+
+      self$id <- digest::digest(object_strings, algo = "md5")
+      self$string <- object_strings
+      # object_set_file <- paste0("./.certigo/object_sets/", self$id)
+      # if (!file.exists(object_set_file)) {
+      #   dir_create(path_dir(object_set_file), recursive = TRUE)
+      #   jsonlite::write_json(object_strings, object_set_file)
+      # }
+      # self$string <- object_set_file
+    }
+  ),
+  active = list(
+    digest = function(...) {
+      map_chr(self$objects, "digest") %>% digest::digest(algo = "md5")
+    },
+    exists = function(...) map_lgl(self$objects, "exists") %>% all(),
+    individual = function(...) {
+      self$objects %>% map("individual") %>% flatten()
+    }
+  )
+)
+
+
+#' @rdname object
+#' @export
+object_set <- ObjectSet$new
+
+
+
+
+
+
+
+path_is_child <- function(path, start = ".") {
+  startsWith(fs::path_abs(path), fs::path_real(start))
+}

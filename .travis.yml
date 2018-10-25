@@ -37,6 +37,7 @@ env:
 
 #services
 services:
+  - docker
 
 addons:
   apt:
