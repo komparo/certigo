@@ -11,27 +11,35 @@ design <- tibble(
   n_animals = c(10, 20, 30, 10, 20, 30)
 )
 
+
+design <- tibble(
+  animal = c("dog", "cat", "horse", "tortoise", "fly", "bird"),
+  cuteness_mean = c(1, 0.9, 0.8, 0.6, 0.1, 0.4),
+  n_animals = c(10, 20, 30, 10, 20, 30)
+) %>%
+  mutate(
+    parameters = dynutils::mapdf(., parameters),
+    script = list(script_file("scripts/determine_animal_cuteness.R")),
+    executor = list(docker_executor(container = "rocker/tidyverse")),
+    animal_cuteness = str_glue("derived/animal_cuteness/{animal}.csv") %>% map(derived_file)
+  )
+
 determine_animal_cuteness <- rscript_call(
   "determine_animal_cuteness",
   design = design,
-  inputs = design %>% transmute(
-    parameters = design %>% dynutils::mapdf(parameters),
-    script = list(script_file("scripts/determine_animal_cuteness.R")),
-    executor = list(docker_executor(container = "rocker/tidyverse"))
-  ),
-  outputs = design %>%
-    transmute(
-      animal_cuteness = str_glue("derived/animal_cuteness/{animal}.csv") %>% map(derived_file)
-    )
+  inputs = design %>% select(parameters, script, executor),
+  outputs = design %>% select(animal_cuteness)
 )
 
 aggregate_animal_cuteness <- rscript_call(
   "aggregate_animal_cuteness",
-  inputs = tibble(
-    script = list(script_file("scripts/aggregate_animal_cuteness.R")),
-    animal_cutenesses = list(object_set(determine_animal_cuteness$outputs$animal_cuteness))
+  design = list(
+    animal_cuteness_individual = object_set(determine_animal_cuteness$design$animal_cuteness),
+    script = script_file("scripts/aggregate_animal_cuteness.R"),
+    animal_cuteness = derived_file("derived/animal_cuteness.csv")
   ),
-  outputs = tibble(animal_cuteness = list(derived_file("derived/animal_cuteness.csv")))
+  inputs = design[c("script", "animal_cuteness_individual")],
+  outputs = design["animal_cuteness"]
 )
 
 plot_animal_cuteness <- rscript_call(
@@ -103,3 +111,4 @@ animal_workflow <- workflow(
 )
 
 animal_workflow$plot()
+

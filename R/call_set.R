@@ -6,8 +6,11 @@ CallSet <- R6::R6Class(
     inputs = NULL,
     outputs = NULL,
     design = NULL,
-    initialize = function(id, call_class, inputs, outputs, design = NULL) {
+    initialize = function(id, call_class, design = NULL, inputs, outputs) {
       self$id <- id
+
+      inputs <- rlang::eval_tidy(inputs, data = list(design = design))
+      outputs <- rlang::eval_tidy(outputs, data = list(design = design))
 
       # check inputs and outputs tibbles
       inputs <- process_objects(inputs)
@@ -20,6 +23,10 @@ CallSet <- R6::R6Class(
         design <- tibble(id = paste0(id, "_", seq_len(nrow(inputs))))
       }
       design$id <- paste0(id, "_", seq_len(nrow(inputs)))
+
+      design <- process_objects(design)
+
+      testthat::expect_equal(nrow(design), nrow(outputs))
 
       # set inputs and outputs of this call set
       self$inputs <- inputs
@@ -55,6 +62,8 @@ CallSet <- R6::R6Class(
 
 calls_factory <- function(class) {
   function(id, inputs, outputs, design = NULL) {
+    inputs <- rlang::enquo(inputs)
+    outputs <- rlang::enquo(outputs)
     CallSet$new(id, class, inputs, outputs, design = design)
   }
 }
