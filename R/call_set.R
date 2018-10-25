@@ -23,7 +23,7 @@ CallSet <- R6::R6Class(
       self$calls <- pmap(design, function(...) {
         design_row <- list(...)
 
-        call_class$new(design_row$id, inputs = design_row[self$input_ids], outputs = design_row[self$output_ids])
+        call_class$new(design_row$id, design = design_row, inputs = design_row[self$input_ids], outputs = design_row[self$output_ids])
       })
     },
     start = function() {
@@ -85,7 +85,7 @@ CallCollection <- R6::R6Class(
     outputs = NULL,
     design = NULL,
     initialize = function(id, ...) {
-      # create calls
+      # create common calls and common design
       self$calls <- list(...) %>% map("calls") %>% flatten()
 
       # adapt ids
@@ -101,8 +101,6 @@ CallCollection <- R6::R6Class(
       }
 
       # merge inputs, outputs and design
-      self$inputs <- self$calls %>% map("inputs") %>% dynutils::list_as_tibble()
-      self$outputs <- self$calls %>% map("outputs") %>% dynutils::list_as_tibble()
       self$design <- self$calls %>% map("design") %>% dynutils::list_as_tibble()
       self$design$id <- self$calls %>% map_chr("id")
     }
