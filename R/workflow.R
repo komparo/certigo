@@ -93,37 +93,59 @@ Workflow <- R6Class(
         ggraph::geom_node_label(aes(label = name, fill = type)) +
         ggraph::theme_graph()
     },
-    run = function(poll_time = 0.01) {
+    run = function(poll_time = 0.1) {
       self$execution <- self$execution %>% mutate(status = map_chr(call, "status"))
 
-      while(any(self$execution$status == "waiting")) {
-        self$execution <- self$execution %>% mutate(status = map_chr(call, "status"))
+      execution_running <- tibble(id = character(), call = list())
+      execution_waiting <- self$execution
+      execution_finished <- tibble(id = character(), status = character())
 
-        execution_waiting <- self$execution %>%
-          filter(status == "waiting") %>%
-          select(-status)
+      while(nrow(execution_waiting) > 0 || nrow(execution_running) > 0) {
+        # end successful processes
+        execution_finished_now <- execution_running %>%
+          mutate(status = map_chr(call, "status")) %>%
+          filter(status != "running")
 
+        if (nrow(execution_finished_now) > 0) {
+          execution_finished_now %>%
+            pull(call) %>%
+            map("wait") %>%
+            invoke_map()
+
+          execution_finished <- bind_rows(execution_finished, execution_finished_now)
+          execution_running <- execution_running %>% filter(!id %in% execution_finished_now$id)
+        }
+
+        # get ready processes (with inputs which were succesful)
         execution_ready <- self$call_dependencies %>%
           filter(id %in% execution_waiting$id) %>%
-          left_join(self$execution, c("dependency"="id")) %>%
+          left_join(execution_finished, c("dependency"="id")) %>%
           group_by(id) %>%
           summarise(
             status = case_when(
+              any(is.na(status)) ~ "waiting",
               any(status == "error") ~ "dependency_error",
-              any(status == "waiting") ~ "waiting",
-              all(status %in% c("cached", "success")) ~ "ready"
+              all(status %in% c("cached", "success")) ~ "ready",
+              TRUE ~ "running"
             )
           ) %>%
           tidyr::complete(id = execution_waiting$id, fill = list(status = "ready")) %>%
           filter(status == "ready") %>%
-          left_join(execution_waiting, "id")
+          left_join(execution_waiting %>% select(id, call), "id")
 
+        # start ready processes
         execution_ready$call %>% map("start") %>% invoke_map()
-        execution_ready$call %>% map("wait") %>% invoke_map()
+        execution_running <- bind_rows(
+          execution_running,
+          execution_ready
+        )
+        execution_waiting <- execution_waiting %>% filter(!id %in% execution_ready$id)
 
         Sys.sleep(poll_time)
       }
 
+      # get status of all calls and return if all successful
+      self$execution <- self$execution %>% mutate(status = map_chr(call, "status"))
       if (all(self$execution$status %in% c("cached", "success"))) {
         cat_rule(crayon_ok("\U2714 Workflow successfully executed"))
       } else {

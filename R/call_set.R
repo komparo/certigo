@@ -1,38 +1,28 @@
 CallSet <- R6::R6Class(
   "CallSet",
   public = list(
-    calls = list(),
-    id = NULL,
-    inputs = NULL,
-    outputs = NULL,
     design = NULL,
-    initialize = function(id, call_class, inputs, outputs, design = NULL) {
+    id = NULL,
+    input_ids = NULL,
+    output_ids = NULL,
+    initialize = function(id, call_class, design, input_ids, output_ids) {
       self$id <- id
 
-      # check inputs and outputs tibbles
-      inputs <- process_objects(inputs)
-      outputs <- process_objects(outputs)
+      design <- process_objects(design)
+      design$id <- paste0(id, "_", seq_len(nrow(design)))
 
-      testthat::expect_equal(nrow(inputs), nrow(outputs))
+      testthat::expect_true(all(input_ids %in% names(design)))
+      testthat::expect_true(all(output_ids %in% names(design)))
 
-      # create dummy design if not given
-      if (is.null(design)) {
-        design <- tibble(id = paste0(id, "_", seq_len(nrow(inputs))))
-      }
-      design$id <- paste0(id, "_", seq_len(nrow(inputs)))
-
-      # set inputs and outputs of this call set
-      self$inputs <- inputs
-      self$outputs <- outputs
       self$design <- design
+      self$input_ids <- input_ids
+      self$output_ids <- output_ids
 
       # create calls
-      self$calls <- map(seq_len(nrow(inputs)), function(call_ix) {
-        inputs_row <- dynutils::extract_row_to_list(inputs, call_ix)
-        outputs_row <- dynutils::extract_row_to_list(outputs, call_ix)
-        design_row <- dynutils::extract_row_to_list(design, call_ix)
+      self$design$calls <- pmap(design, function(...) {
+        design_row <- list(...)
 
-        call_class$new(design_row$id, inputs_row, outputs_row, design_row)
+        call_class$new(design_row$id, design = design_row, inputs = design_row[self$input_ids], outputs = design_row[self$output_ids])
       })
     },
     start = function() {
@@ -50,12 +40,19 @@ CallSet <- R6::R6Class(
     debug = function() {
       self$calls[[1]]$debug()
     }
+  ),
+  active = list(
+    inputs = function(...) self$design %>% select(!!self$input_ids),
+    outputs = function(...) self$design %>% select(!!self$output_ids),
+    calls = function(...) self$design$calls
   )
 )
 
 calls_factory <- function(class) {
   function(id, inputs, outputs, design = NULL) {
-    CallSet$new(id, class, inputs, outputs, design = design)
+    # input_ids <- rlang::enquo(inputs)
+    # output_ids <- rlang::enquo(outputs)
+    CallSet$new(id, class, design, input_ids = inputs, output_ids = outputs)
   }
 }
 
@@ -88,7 +85,7 @@ CallCollection <- R6::R6Class(
     outputs = NULL,
     design = NULL,
     initialize = function(id, ...) {
-      # create calls
+      # create common calls and common design
       self$calls <- list(...) %>% map("calls") %>% flatten()
 
       # adapt ids
@@ -104,8 +101,6 @@ CallCollection <- R6::R6Class(
       }
 
       # merge inputs, outputs and design
-      self$inputs <- self$calls %>% map("inputs") %>% dynutils::list_as_tibble()
-      self$outputs <- self$calls %>% map("outputs") %>% dynutils::list_as_tibble()
       self$design <- self$calls %>% map("design") %>% dynutils::list_as_tibble()
       self$design$id <- self$calls %>% map_chr("id")
     }
@@ -116,3 +111,51 @@ CallCollection <- R6::R6Class(
 #' @param ... Call sets
 #' @export
 call_collection <- CallCollection$new
+
+
+#' Load a call from an R file, given by a "get_call" function in that R file
+#'
+#' @param call_path The location of the R file which, when sourced, contains a "get_call" function
+#' @param derived_file_directory Optional, the location in which derived files should be stored
+#' @param ... Other parameters given to the get_call function
+#'
+#' @export
+load_call <- function(call_path, derived_file_directory = "./", ...) {
+  call_environment <- new.env()
+
+  source(call_path, local = call_environment)
+  call_generator <- get("get_call", call_environment)
+
+  withr::with_options(
+    list(
+      workflow_directory = fs::path_dir(call_path),
+      derived_file_directory = derived_file_directory
+    ),
+    call_generator(...)
+  )
+}
+
+#' @param repo The url of the repo, using https
+#' @param local_path The path in which to store the git repo
+#' @rdname load_call
+#' @export
+load_call_git <- function(
+  repo,
+  local_path = fs::path(".certigo/repos", digest::digest(repo, "md5")),
+  call_path = "workflow.R",
+  ...
+) {
+  pull_or_clone(repo, local_path)
+
+  load_call(fs::path(local_path, call_path), ...)
+}
+
+
+
+pull_or_clone <- function(repo, local_path) {
+  if (fs::dir_exists(local_path)) {
+    git2r::pull(local_path)
+  } else {
+    git2r::clone(repo, local_path = local_path)
+  }
+}

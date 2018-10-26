@@ -144,6 +144,9 @@ DerivedFile <- R6Class(
   inherit = File,
   public = list(
     initialize = function(path) {
+      # add derived file directory to path if defined
+      path <- fs::path(getOption("derived_file_directory", default = "./"), path)
+
       super$initialize(path)
 
       # check the history if the derived file already exists
@@ -185,6 +188,9 @@ RawFile <- R6Class(
   inherit = File,
   public = list(
     initialize = function(path) {
+      # add workflow directory to path if defined
+      path <- fs::path(getOption("workflow_directory", default = "./"), path)
+
       super$initialize(path)
 
       # check if raw file exists
@@ -324,10 +330,29 @@ parameters <- Parameters$new
 
 
 
+Atomic <- R6Class(
+  "Atomic",
+  inherit = Object,
+  public = list(
+    atomic = NULL,
+    initialize = function(atomic) {
+      self$atomic <- atomic
+      self$string <- atomic
+      self$id <- digest <- self$digest
+    }
+  ),
+  active = list(
+    digest = function(...) {
+      digest::digest(self$atomic, algo = "md5")
+    },
+    exists = function(...) TRUE
+  )
+)
 
 
-
-
+#' @rdname object
+#' @export
+atomic <- Atomic$new
 
 
 
@@ -339,14 +364,26 @@ ObjectSet <- R6Class(
   public = list(
     objects = list(),
     initialize = function(objects) {
+      # if all objects are atomic, create a set of parameters for each
+      if (all(map_lgl(objects, is.atomic))) {
+        objects <- map(objects, atomic)
+      } else if (all(map_lgl(objects, ~"Object" %in% class(.)))) {
+
+      } else {
+        stop("Invalid set of objects, have class:", paste0(map(objects, class) %>% map_chr(first), collapse = ", "))
+      }
+
       self$objects <- objects
 
       # get the strings of each object
       object_strings <- map(self$objects, "string")
 
       # simplify to a character vector if all objects are not sets themselves
+      # else, all objects should be objects themselves
       if (!any(map_lgl(self$objects, ~"ObjectSet" %in% class(.)))) {
         object_strings <- as.character(object_strings)
+      } else {
+        testthat::expect_true(all(map_lgl(objects, ~"Object" %in% class(.))))
       }
 
       self$id <- digest::digest(object_strings, algo = "md5")

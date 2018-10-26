@@ -9,6 +9,7 @@
 \alias{script_file}
 \alias{derived_directory}
 \alias{parameters}
+\alias{atomic}
 \alias{object_set}
 \title{Objects}
 \format{An object of class \code{R6ClassGenerator} of length 24.}
@@ -26,6 +27,8 @@ script_file(...)
 derived_directory(...)
 
 parameters(...)
+
+atomic(...)
 
 object_set(...)
 }
