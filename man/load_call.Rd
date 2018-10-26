@@ -11,6 +11,8 @@ load_call_git(repo, local_path = fs::path(".certigo/repos",
   digest::digest(repo, "md5")), call_path = "workflow.R", ...)
 }
 \arguments{
+\item{call_path}{The location of the R file which, when sourced, contains a "get_call" function}
+
 \item{derived_file_directory}{Optional, the location in which derived files should be stored}
 
 \item{...}{Other parameters given to the get_call function}
@@ -18,8 +20,6 @@ load_call_git(repo, local_path = fs::path(".certigo/repos",
 \item{repo}{The url of the repo, using https}
 
 \item{local_path}{The path in which to store the git repo}
-
-\item{call_location}{The location of the R file which, when sourced, contains a "get_call" function}
 }
 \description{
 Load a call from an R file, given by a "get_call" function in that R file
