@@ -20,6 +20,7 @@ Imports:
   igraph,
   jsonlite,
   fs,
+  git2r,
   glue,
   ggplot2,
   R6,
@@ -31,7 +32,8 @@ Imports:
   testthat,
   tibble,
   tidygraph,
-  tidyr
+  tidyr,
+  withr
 Suggests: 
   ggraph,
   extrafont,

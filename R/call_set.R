@@ -139,7 +139,12 @@ load_call <- function(call_path, derived_file_directory = "./", ...) {
 #' @param local_path The path in which to store the git repo
 #' @rdname load_call
 #' @export
-load_call_git <- function(repo, local_path = fs::path(".certigo/repos", digest::digest(repo, "md5")), call_path = "workflow.R", ...) {
+load_call_git <- function(
+  repo,
+  local_path = fs::path(".certigo/repos", digest::digest(repo, "md5")),
+  call_path = "workflow.R",
+  ...
+) {
   pull_or_clone(repo, local_path)
 
   load_call(fs::path(local_path, call_path), ...)
