@@ -8,7 +8,7 @@
 load_call(call_path, derived_file_directory = "./", ...)
 
 load_call_git(repo, local_path = fs::path(".certigo/repos",
-  digest::digest(repo, "md5")), call_path = "workflow.R")
+  digest::digest(repo, "md5")), call_path = "workflow.R", ...)
 }
 \arguments{
 \item{derived_file_directory}{Optional, the location in which derived files should be stored}
