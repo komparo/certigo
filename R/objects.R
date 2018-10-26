@@ -144,6 +144,9 @@ DerivedFile <- R6Class(
   inherit = File,
   public = list(
     initialize = function(path) {
+      # add derived file directory to path if defined
+      path <- fs::path(getOption("derived_file_directory", default = "./"), path)
+
       super$initialize(path)
 
       # check the history if the derived file already exists
@@ -185,6 +188,9 @@ RawFile <- R6Class(
   inherit = File,
   public = list(
     initialize = function(path) {
+      # add workflow directory to path if defined
+      path <- fs::path(getOption("workflow_directory", default = "./"), path)
+
       super$initialize(path)
 
       # check if raw file exists

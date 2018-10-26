@@ -1,7 +1,6 @@
 CallSet <- R6::R6Class(
   "CallSet",
   public = list(
-    calls = list(),
     design = NULL,
     id = NULL,
     input_ids = NULL,
@@ -20,7 +19,7 @@ CallSet <- R6::R6Class(
       self$output_ids <- output_ids
 
       # create calls
-      self$calls <- pmap(design, function(...) {
+      self$design$calls <- pmap(design, function(...) {
         design_row <- list(...)
 
         call_class$new(design_row$id, design = design_row, inputs = design_row[self$input_ids], outputs = design_row[self$output_ids])
@@ -44,7 +43,8 @@ CallSet <- R6::R6Class(
   ),
   active = list(
     inputs = function(...) self$design %>% select(!!self$input_ids),
-    outputs = function(...) self$design %>% select(!!self$output_ids)
+    outputs = function(...) self$design %>% select(!!self$output_ids),
+    calls = function(...) self$design$calls
   )
 )
 
@@ -111,3 +111,46 @@ CallCollection <- R6::R6Class(
 #' @param ... Call sets
 #' @export
 call_collection <- CallCollection$new
+
+
+#' Load a call from an R file, given by a "get_call" function in that R file
+#'
+#' @param call_location The location of the R file which, when sourced, contains a "get_call" function
+#' @param derived_file_directory Optional, the location in which derived files should be stored
+#' @param ... Other parameters given to the get_call function
+#'
+#' @export
+load_call <- function(call_path, derived_file_directory = "./", ...) {
+  call_environment <- new.env()
+
+  source(call_path, local = call_environment)
+  call_generator <- get("get_call", call_environment)
+
+  withr::with_options(
+    list(
+      workflow_directory = fs::path_dir(call_path),
+      derived_file_directory = derived_file_directory
+    ),
+    call_generator(...)
+  )
+}
+
+#' @param repo The url of the repo, using https
+#' @param local_path The path in which to store the git repo
+#' @rdname load_call
+#' @export
+load_call_git <- function(repo, local_path = fs::path(".certigo/repos", digest::digest(repo, "md5")), call_path = "workflow.R") {
+  pull_or_clone(repo, local_path)
+
+  load_call(fs::path(local_path, call_path))
+}
+
+
+
+pull_or_clone <- function(repo, local_path) {
+  if (fs::dir_exists(local_path)) {
+    git2r::pull(local_path)
+  } else {
+    git2r::clone(repo, local_path = local_path)
+  }
+}

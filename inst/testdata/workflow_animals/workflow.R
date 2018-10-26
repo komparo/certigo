@@ -54,16 +54,10 @@ plot_animal_cuteness <- rscript_call(
   outputs = "plot"
 )
 
-test_animal_cuteness <- rscript_call(
-  "test_animal_cuteness",
-  design = aggregate_animal_cuteness$design %>%
-    select(animal_cuteness) %>%
-    mutate(
-      script = list(script_file("scripts/test_animal_cuteness.R")),
-      animal_cuteness_tests = list(derived_file("derived/animal_cuteness_tests.csv"))
-    ),
-  inputs = c("script", "animal_cuteness"),
-  outputs = "animal_cuteness_tests"
+test_animal_cuteness <- load_call(
+  "subworkflows/test_animal_cuteness/workflow.R",
+  aggregate_animal_cuteness = aggregate_animal_cuteness,
+  derived_file_directory = "derived/"
 )
 
 plot_animal_cuteness_tests <- rscript_call(

@@ -19,7 +19,8 @@ Executor <- R6Class(
     stop = function() stop(),
     error = NULL,
     output = NULL,
-    string = ""
+    string = "",
+    time = NULL
   ),
   active = list(
     status = function() stop()
@@ -59,6 +60,7 @@ ProcessExecutor <- R6Class(
       # read in the output and error
       self$output <- self$process$read_all_output_lines()
       self$error <- self$process$read_all_error_lines()
+      self$time <- Sys.time() - self$process$get_start_time()
       self$process$kill_tree()
     },
     reset = function() {
@@ -106,6 +108,7 @@ DockerExecutor <- R6Class(
   public = list(
     container = NULL,
     user_id = "1000",
+    tag = NULL,
     initialize = function(container = "rocker/tidyverse") {
       self$container <- container
       self$string <- container
@@ -113,12 +116,15 @@ DockerExecutor <- R6Class(
       self$user_id <- system("id -u", intern = TRUE)
     },
     start = function(command, args) {
+      self$tag <- tempfile(tmpdir = "") %>% str_sub(2)
+
       args <- c(
         "run",
         "-v", glue::glue("{fs::path_abs('.')}:/data"),
         "-w", "/data",
         "--rm",
         "-u", self$user_id,
+        "--name", self$tag,
         self$container,
         command,
         args
