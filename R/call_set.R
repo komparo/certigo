@@ -9,7 +9,7 @@ CallSet <- R6::R6Class(
       self$id <- id
 
       design <- process_objects(design)
-      design$id <- paste0(id, "_", seq_len(nrow(design)))
+      design$id <- paste0(id, "/", seq_len(nrow(design)))
 
       testthat::expect_true(all(input_ids %in% names(design)))
       testthat::expect_true(all(output_ids %in% names(design)))
@@ -49,7 +49,7 @@ CallSet <- R6::R6Class(
 )
 
 calls_factory <- function(class) {
-  function(id, inputs, outputs, design = NULL) {
+  function(id = "", inputs, outputs, design = NULL) {
     # input_ids <- rlang::enquo(inputs)
     # output_ids <- rlang::enquo(outputs)
     CallSet$new(id, class, design, input_ids = inputs, output_ids = outputs)
@@ -120,7 +120,12 @@ call_collection <- CallCollection$new
 #' @param ... Other parameters given to the get_call function
 #'
 #' @export
-load_call <- function(call_path, derived_file_directory = "./", ...) {
+load_call <- function(
+  call_path,
+  derived_file_directory = "./",
+  id = call_path,
+  ...
+) {
   call_environment <- new.env()
 
   source(call_path, local = call_environment)
@@ -132,7 +137,10 @@ load_call <- function(call_path, derived_file_directory = "./", ...) {
       derived_file_directory = derived_file_directory
     ),
     call_generator(...)
-  )
+  ) %>%
+    call_collection(
+      id = id
+    )
 }
 
 #' @param repo The url of the repo, using https
@@ -143,11 +151,12 @@ load_call_git <- function(
   repo,
   local_path = fs::path(".certigo/repos", digest::digest(repo, "md5")),
   call_path = "workflow.R",
+  id = repo,
   ...
 ) {
   pull_or_clone(repo, local_path)
 
-  load_call(fs::path(local_path, call_path), ...)
+  load_call(fs::path(local_path, call_path), id = id, ...)
 }
 
 
