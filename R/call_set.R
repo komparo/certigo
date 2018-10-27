@@ -9,7 +9,7 @@ CallSet <- R6::R6Class(
       self$id <- id
 
       design <- process_objects(design)
-      design$id <- paste0(id, "/", seq_len(nrow(design)))
+      design$id <- paste0(id, seq_len(nrow(design)))
 
       testthat::expect_true(all(input_ids %in% names(design)))
       testthat::expect_true(all(output_ids %in% names(design)))
@@ -163,6 +163,9 @@ load_call_git <- function(
   ...
 ) {
   pull_or_clone(repo, local_path)
+
+  id <- id %>%
+    gsub("https://github.com", "\U1F4E1", .)
 
   load_call(fs::path(local_path, call_path), id = id, ...)
 }
