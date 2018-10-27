@@ -132,16 +132,23 @@ load_call <- function(
   source(call_path, local = call_environment)
   call_generator <- get("get_call", call_environment)
 
-  withr::with_options(
+  # load call
+  call <- withr::with_options(
     list(
       workflow_directory = fs::path_dir(call_path),
       derived_file_directory = derived_file_directory
     ),
     call_generator(...)
-  ) %>%
-    call_collection(
-      id = id
-    )
+  )
+
+  # adapt ids
+  walk(call$design$calls, function(call) {
+    call$id <- paste0(id, "/", call$id)
+    call$design$id <- call$id
+  })
+  call$design$id <- call$design$calls %>% map_chr("id")
+
+  call
 }
 
 #' @param repo The url of the repo, using https
