@@ -117,6 +117,7 @@ call_collection <- CallCollection$new
 #'
 #' @param call_path The location of the R file which, when sourced, contains a "get_call" function
 #' @param derived_file_directory Optional, the location in which derived files should be stored
+#' @param id The id of the call
 #' @param ... Other parameters given to the get_call function
 #'
 #' @export

@@ -5,15 +5,19 @@
 \alias{load_call_git}
 \title{Load a call from an R file, given by a "get_call" function in that R file}
 \usage{
-load_call(call_path, derived_file_directory = "./", ...)
+load_call(call_path, derived_file_directory = "./", id = call_path,
+  ...)
 
 load_call_git(repo, local_path = fs::path(".certigo/repos",
-  digest::digest(repo, "md5")), call_path = "workflow.R", ...)
+  digest::digest(repo, "md5")), call_path = "workflow.R", id = repo,
+  ...)
 }
 \arguments{
 \item{call_path}{The location of the R file which, when sourced, contains a "get_call" function}
 
 \item{derived_file_directory}{Optional, the location in which derived files should be stored}
+
+\item{id}{The id of the call}
 
 \item{...}{Other parameters given to the get_call function}
 

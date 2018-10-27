@@ -10,9 +10,9 @@
 \usage{
 Call
 
-rscript_call(id, inputs, outputs, design = NULL)
+rscript_call(id = "", inputs, outputs, design = NULL)
 
-rmd_call(id, inputs, outputs, design = NULL)
+rmd_call(id = "", inputs, outputs, design = NULL)
 }
 \arguments{
 \item{id}{The name of the call}
