@@ -9,8 +9,8 @@ get_call <- function(
         script = list(script_file("test_animal_cuteness.R")),
         animal_cuteness_tests = list(derived_file("animal_cuteness_tests.csv"))
       ),
-    inputs = c("script", "animal_cuteness"),
-    outputs = "animal_cuteness_tests"
+    inputs = exprs(script, animal_cuteness),
+    outputs = exprs(animal_cuteness_tests)
   )
 }
 

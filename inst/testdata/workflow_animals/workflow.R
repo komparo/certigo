@@ -9,13 +9,6 @@ design <- tibble(
   animal = c("dog", "cat", "horse", "tortoise", "fly", "bird"),
   cuteness_mean = c(1, 0.9, 0.8, 0.6, 0.1, 0.4),
   n_animals = c(10, 20, 30, 10, 20, 30)
-)
-
-
-design <- tibble(
-  animal = c("dog", "cat", "horse", "tortoise", "fly", "bird"),
-  cuteness_mean = c(1, 0.9, 0.8, 0.6, 0.1, 0.4),
-  n_animals = c(10, 20, 30, 10, 20, 30)
 ) %>%
   mutate(
     parameters = dynutils::mapdf(., parameters),
@@ -27,8 +20,8 @@ design <- tibble(
 determine_animal_cuteness <- rscript_call(
   "determine_animal_cuteness",
   design = design,
-  inputs = c("parameters", "script", "executor"),
-  outputs = "animal_cuteness"
+  inputs = exprs(parameters, script, executor),
+  outputs = exprs(animal_cuteness)
 )
 
 aggregate_animal_cuteness <- rscript_call(
@@ -38,8 +31,8 @@ aggregate_animal_cuteness <- rscript_call(
     script = script_file("scripts/aggregate_animal_cuteness.R"),
     animal_cuteness = derived_file("derived/animal_cuteness.csv")
   ),
-  inputs = c("script", "animal_cuteness_individual"),
-  outputs = "animal_cuteness"
+  inputs = exprs(script, animal_cuteness_individual),
+  outputs = exprs(animal_cuteness)
 )
 
 plot_animal_cuteness <- rscript_call(
@@ -50,12 +43,12 @@ plot_animal_cuteness <- rscript_call(
       script = list(script_file("scripts/plot_animal_cuteness.R")),
       plot = list(derived_file("results/animal_cuteness.pdf"))
     ),
-  inputs = c("script", "animal_cuteness"),
-  outputs = "plot"
+  inputs = exprs(script, animal_cuteness),
+  outputs = exprs(plot)
 )
 
 test_animal_cuteness <- load_call(
-  "subworkflows/test_animal_cuteness/workflow.R",
+  "modules/test_animal_cuteness/workflow.R",
   aggregate_animal_cuteness = aggregate_animal_cuteness,
   derived_file_directory = "derived/"
 )
@@ -69,8 +62,8 @@ plot_animal_cuteness_tests <- rscript_call(
     script = list(script_file("scripts/plot_animal_cuteness_tests.R")),
     plot = list(derived_file("results/animal_cuteness_tests.pdf"))
   ),
-  inputs = c("script", "animal_cuteness", "animal_cuteness_tests"),
-  outputs = "plot"
+  inputs = exprs(script, animal_cuteness, animal_cuteness_tests),
+  outputs = exprs(plot)
 )
 
 overview <- rmd_call(
@@ -80,8 +73,8 @@ overview <- rmd_call(
     executor = docker_executor("rocker/tidyverse"),
     rendered = derived_file("results/overview.html")
   ),
-  inputs = c("script", "executor"),
-  outputs = c("rendered")
+  inputs = exprs(script, executor),
+  outputs = exprs(rendered)
 )
 
 always_error <- rscript_call(
@@ -91,8 +84,8 @@ always_error <- rscript_call(
       script = list(script_file("scripts/always_error.R")),
       plot = list(derived_file("results/error.pdf"))
     ),
-  inputs = c("animal_cuteness", "script"),
-  outputs = c("plot")
+  inputs = exprs(animal_cuteness, script),
+  outputs = exprs(plot)
 )
 
 

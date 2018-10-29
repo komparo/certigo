@@ -3,26 +3,30 @@ CallSet <- R6::R6Class(
   public = list(
     design = NULL,
     id = NULL,
-    input_ids = NULL,
-    output_ids = NULL,
-    initialize = function(id, call_class, design, input_ids, output_ids) {
+    inputs = NULL,
+    outputs = NULL,
+    initialize = function(id, call_class, design, input_exprs, output_exprs) {
       self$id <- id
 
       design <- process_objects(design)
       design$id <- paste0(id, seq_len(nrow(design)))
 
-      testthat::expect_true(all(input_ids %in% names(design)))
-      testthat::expect_true(all(output_ids %in% names(design)))
-
       self$design <- design
-      self$input_ids <- input_ids
-      self$output_ids <- output_ids
+      self$inputs <- design %>% transmute(!!!input_exprs)
+      self$outputs <- design %>% transmute(!!!output_exprs)
 
       # create calls
-      self$design$calls <- pmap(design, function(...) {
-        design_row <- list(...)
+      self$design$calls <- map(seq_len(nrow(self$design)), function(call_ix) {
+        design <- self$design %>% dynutils::extract_row_to_list(call_ix)
+        inputs <- self$inputs %>% dynutils::extract_row_to_list(call_ix)
+        outputs <- self$outputs %>% dynutils::extract_row_to_list(call_ix)
 
-        call_class$new(design_row$id, design = design_row, inputs = design_row[self$input_ids], outputs = design_row[self$output_ids])
+        call_class$new(
+          design$id,
+          design = design,
+          inputs = inputs,
+          outputs = outputs
+        )
       })
     },
     start = function() {
@@ -42,17 +46,13 @@ CallSet <- R6::R6Class(
     }
   ),
   active = list(
-    inputs = function(...) self$design %>% select(!!self$input_ids),
-    outputs = function(...) self$design %>% select(!!self$output_ids),
     calls = function(...) self$design$calls
   )
 )
 
 calls_factory <- function(class) {
-  function(id = "", inputs, outputs, design = NULL) {
-    # input_ids <- rlang::enquo(inputs)
-    # output_ids <- rlang::enquo(outputs)
-    CallSet$new(id, class, design, input_ids = inputs, output_ids = outputs)
+  function(id = "", design, inputs, outputs) {
+    CallSet$new(id, class, design, input_exprs = inputs, output_exprs = outputs)
   }
 }
 
