@@ -20,9 +20,9 @@ create_workflow_dir <- function() {
 processx::run("docker", c("build", "-t", "certigo/plot_animal_cuteness", system.file('testdata/workflow_animals/containers/plot_animal_cuteness/', package = 'certigo')), echo = F)
 
 # some testing functions
-expect_rerun <- function(x) {expect_output(x, "^.*Finished$", info = "Expected a rerun")}
+expect_rerun <- function(x) {expect_output(x, "^.*Finished.*$", info = "Expected a rerun")}
 expect_rerun_somewhere <- function(x) {expect_output(x, ".*Finished.*", info = "Expected a rerun")}
-expect_cached <- function(x) {expect_output(x, "^.*Cached$", info = "Expected a cached")}
+expect_cached <- function(x) {expect_output(x, "^.*Cached.*$", info = "Expected a cached")}
 expect_cached_somewhere <- function(x) {expect_output(x, ".*Cached.*", info = "Expected a cached")}
 
 # create and go to working directory

@@ -45,7 +45,7 @@ Call <- R6Class(
       # make sure all inputs are present
       existing_input <- map_lgl(self$inputs, function(input) {
         if (TRUE && !input$exists) {
-          cat_line(col_split(self$id, crayon_error("\U274C Input does not exist: ", input$id)))
+          cat_line(col_split(crayon_error("\U274C Input does not exist: ", input$id), self$id))
           FALSE
         } else {
           TRUE
@@ -65,12 +65,12 @@ Call <- R6Class(
       # if an output is not present, its call digest will be NA, which will always trigger a rerun
       if(all(!is.na(output_call_digests)) && all(output_call_digests == call_digest)) {
         # cached
-        cat_line(col_split(self$id, crayon_ok("\U23F0 Cached")))
+        cat_line(col_split(crayon_ok("\U23F0 Cached"), self$id))
         self$cached <- TRUE
       } else {
         # start the executor
         self$executor$start(self$command, self$args)
-        cat_line(col_split(self$id, crayon_info("\U25BA Started")))
+        cat_line(col_split(crayon_info("\U25BA Started"), self$id))
         self$cached <- FALSE
       }
     },
@@ -83,9 +83,9 @@ Call <- R6Class(
         self$executor$wait()
 
         if (self$executor$status %in% c("success")) {
-          cat_line(col_split(self$id, crayon_ok("\U2714 Finished")))
+          cat_line(col_split(crayon_ok("\U2714 Finished"), self$id))
         } else if (self$executor$status %in% c("errored")) {
-          cat_line(col_split(self$id, crayon_error("\U274C Errored")))
+          cat_line(col_split(crayon_error("\U274C Errored"), self$id))
           map(self$outputs, "delete") %>% invoke_map()
           cat_line(self$executor$error %>% tail(10))
         } else {
@@ -96,7 +96,7 @@ Call <- R6Class(
         find_existing_output <- function() {
           existing_output <- map_lgl(self$outputs, function(output) {
             if (TRUE && !output$exists) {
-              cat_line(col_split(self$id, crayon_warning("\U274C Output does not exist: ", output$id)))
+              cat_line(col_split(crayon_warning("\U274C Output does not exist: ", output$id), self$id))
               FALSE
             } else {
               TRUE
@@ -108,12 +108,12 @@ Call <- R6Class(
         existing_output <- find_existing_output()
         if (any(!existing_output)) {
           wait_time <- 1
-          cat_line(col_split(self$id, crayon_warning("\U274C Not all output present, waiting", wait_time, "seconds")))
+          cat_line(col_split(crayon_warning("\U274C Not all output present, waiting", wait_time, "seconds"), self$id))
           Sys.sleep(wait_time)
 
           existing_output <- find_existing_output()
           if (any(!existing_output)) {
-            cat_line(col_split(self$id, crayon_error("\U274C Output")))
+            cat_line(col_split(crayon_error("\U274C Output"), self$id))
             map(self$outputs, "delete") %>% invoke_map()
             stop("Some output not present but required")
           }

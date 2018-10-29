@@ -1,4 +1,4 @@
-col_split <- function(begin, end, middle = " | ", width_begin = 40) {
+col_split <- function(begin, end, middle = " | ", width_begin = 20) {
   if(nchar(begin) > width_begin) {
     begin <- paste0(
       crayon::col_substring(begin, 1, floor(width_begin/2) - 1),
