@@ -9,7 +9,13 @@ CallSet <- R6::R6Class(
       self$id <- id
 
       design <- process_objects(design)
-      design$id <- paste0(id, seq_len(nrow(design)))
+
+      # add id to existing id, or create new unique id
+      if ("id" %in% names(design)) {
+        design$id <- paste0(id, design$id)
+      } else {
+        design$id <- paste0(id, seq_len(nrow(design)))
+      }
 
       self$design <- design
       self$inputs <- design %>% transmute(!!!input_exprs)
@@ -80,30 +86,24 @@ process_objects <- function(x) {
 CallCollection <- R6::R6Class(
   "CallCollection",
   public = list(
-    calls = list(),
-    inputs = NULL,
-    outputs = NULL,
     design = NULL,
     initialize = function(id, ...) {
-      # create common calls and common design
-      self$calls <- list(...) %>% map("calls") %>% flatten()
+      self$design <- map(list(...), "design") %>% bind_rows()
 
       # adapt ids
-      walk(self$calls, function(call) {
+      walk(self$design$calls, function(call) {
         call$id <- paste0(id, "/", call$id)
         call$design$id <- call$id
       })
 
-      # check call ids
-      call_ids <- map(self$calls, "id")
-      if (any(duplicated(call_ids))) {
-        stop("Duplicated call ids: ", unique(call_ids[duplicated(call_ids)]) %>% glue::glue_collapse(", "))
+      self$design$id <- map_chr(self$design$calls, "id")
+      if (any(duplicated(self$design$id))) {
+        stop("Duplicated call ids: ", unique(self$design$id[duplicated(self$design$id)]) %>% glue::glue_collapse(", "))
       }
-
-      # merge inputs, outputs and design
-      self$design <- self$calls %>% map("design") %>% dynutils::list_as_tibble()
-      self$design$id <- self$calls %>% map_chr("id")
     }
+  ),
+  active = list(
+    calls = function(...) self$design$calls
   )
 )
 
