@@ -11,6 +11,7 @@ CallSet <- R6::R6Class(
       design <- process_objects(design)
 
       # add id to existing id, or create new unique id
+      if (!endsWith(id, "/")) id <- paste0(id, "/")
       if ("id" %in% names(design)) {
         design$id <- paste0(id, design$id)
       } else {
