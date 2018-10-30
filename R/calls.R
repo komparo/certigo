@@ -93,17 +93,17 @@ Call <- R6Class(
         }
 
         # check the output
-        output_checks <- map_lgl(self$outputs, function(output) {
-          check <- output$check
-          if (is.character(check)) {
-            cat_line(col_split(crayon_warning("\U274C", output$id, "->", check), self$id))
+        output_validations <- map_lgl(self$outputs, function(output) {
+          validation <- output$validate(self$design)
+          if (is.character(validation)) {
+            cat_line(col_split(crayon_warning("\U274C", output$id, "->", validation), self$id))
             FALSE
           } else {
             TRUE
           }
         })
 
-        if (!all(output_checks)) {
+        if (!all(output_validations)) {
           cat_line(col_split(crayon_error("\U274C Output"), self$id))
           map(self$outputs, "delete") %>% invoke_map()
           stop("Some output not present but required")

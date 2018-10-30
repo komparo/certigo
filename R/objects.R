@@ -10,7 +10,10 @@ Object <- R6Class(
     id = NULL,
     string = NULL,
     history = NULL,
-    write_history = function(call_digest) {stop("Write history not implemented for", self$id)}
+    write_history = function(call_digest) {stop("Write history not implemented for", self$id)},
+    validate = function(design) {
+      stop("Validate not not implemented for", self$id)
+    }
   ),
   active = list(
     digest = function() {
@@ -21,9 +24,6 @@ Object <- R6Class(
     },
     call_digest = function(...) {
       stop("Call digest not implemented for ", self$id)
-    },
-    check = function() {
-      stop("Check not not implemented for", self$id)
     },
     individual = function(...) {
       list(self)
@@ -40,6 +40,9 @@ Docker <- R6Class(
       self$image <- image
       self$id <- image
       self$string <- image
+    },
+    validate = function(design) {
+      TRUE
     }
   ),
   active = list(
@@ -52,9 +55,6 @@ Docker <- R6Class(
     exists = function() {
       process <- processx::run("docker", c("inspect", "--format={{.ID}}", self$image), error_on_status = FALSE)
       process$status == 0
-    },
-    check = function() {
-      TRUE
     }
   )
 )
@@ -91,6 +91,9 @@ File <- R6Class(
       self$history_path <- history_path(path)
 
       dir_create(path_dir(path), recursive = TRUE)
+    },
+    validate = function(design) {
+      file_exists(self$path)
     },
     read_history = function() {
       jsonlite::read_json(self$history_path, simplifyVector = TRUE)
@@ -141,9 +144,6 @@ File <- R6Class(
     },
     exists_history = function() {
       file_exists(self$history_path)
-    },
-    check = function() {
-      file_exists(self$path)
     }
   )
 )
@@ -322,6 +322,10 @@ Parameters <- R6Class(
         jsonlite::write_json(parameters, parameters_file)
       }
       self$string <- parameters_file
+    },
+    validate = function(design) {
+      # TODO: validation for serialisable objects
+      TRUE
     }
   ),
   active = list(
