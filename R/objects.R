@@ -22,6 +22,9 @@ Object <- R6Class(
     call_digest = function(...) {
       stop("Call digest not implemented for ", self$id)
     },
+    check = function() {
+      stop("Check not not implemented for", self$id)
+    },
     individual = function(...) {
       list(self)
     }
@@ -49,6 +52,9 @@ Docker <- R6Class(
     exists = function() {
       process <- processx::run("docker", c("inspect", "--format={{.ID}}", self$image), error_on_status = FALSE)
       process$status == 0
+    },
+    check = function() {
+      TRUE
     }
   )
 )
@@ -135,6 +141,9 @@ File <- R6Class(
     },
     exists_history = function() {
       file_exists(self$history_path)
+    },
+    check = function() {
+      file_exists(self$path)
     }
   )
 )

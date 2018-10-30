@@ -92,31 +92,21 @@ Call <- R6Class(
           stop("Process neither did not success nor error, was it started?")
         }
 
-        # check whether output is present
-        find_existing_output <- function() {
-          existing_output <- map_lgl(self$outputs, function(output) {
-            if (TRUE && !output$exists) {
-              cat_line(col_split(crayon_warning("\U274C Output does not exist: ", output$id), self$id))
-              FALSE
-            } else {
-              TRUE
-            }
-          })
-        }
-
-        # if some output is not present, error
-        existing_output <- find_existing_output()
-        if (any(!existing_output)) {
-          wait_time <- 1
-          cat_line(col_split(crayon_warning("\U274C Not all output present, waiting", wait_time, "seconds"), self$id))
-          Sys.sleep(wait_time)
-
-          existing_output <- find_existing_output()
-          if (any(!existing_output)) {
-            cat_line(col_split(crayon_error("\U274C Output"), self$id))
-            map(self$outputs, "delete") %>% invoke_map()
-            stop("Some output not present but required")
+        # check the output
+        output_checks <- map_lgl(self$outputs, function(output) {
+          check <- output$check
+          if (is.character(check)) {
+            cat_line(col_split(crayon_warning("\U274C", output$id, "->", check), self$id))
+            FALSE
+          } else {
+            TRUE
           }
+        })
+
+        if (!all(output_checks)) {
+          cat_line(col_split(crayon_error("\U274C Output"), self$id))
+          map(self$outputs, "delete") %>% invoke_map()
+          stop("Some output not present but required")
         }
 
         # write all output histories including the digest of the call
