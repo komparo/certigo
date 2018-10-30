@@ -91,12 +91,16 @@ CallCollection <- R6::R6Class(
       self$design <- map(list(...), "design") %>% bind_rows()
 
       # adapt ids
-      walk(self$design$calls, function(call) {
-        call$id <- paste0(id, "/", call$id)
-        call$design$id <- call$id
-      })
+      if (id != "") {
+        walk(self$design$calls, function(call) {
+          call$id <- paste0(id, "/", call$id)
+          call$design$id <- call$id
+        })
 
-      self$design$id <- map_chr(self$design$calls, "id")
+        self$design$id <- map_chr(self$design$calls, "id")
+      }
+
+      # check for duplicated ids
       if (any(duplicated(self$design$id))) {
         stop("Duplicated call ids: ", unique(self$design$id[duplicated(self$design$id)]) %>% glue::glue_collapse(", "))
       }
