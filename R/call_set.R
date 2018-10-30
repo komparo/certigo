@@ -1,3 +1,25 @@
+# concatenate the ids with forward slashes in between
+concatenate_ids <- function(a, b) {
+  if (is.null(a) || a == "") {
+    return(b)
+  }
+  if (is.null(b) || b == "") {
+    return(a)
+  }
+  if (is.numeric(a)) {
+    a <- as.character(a)
+  }
+  if (is.numeric(b)) {
+    b <- as.character(b)
+  }
+  if (!endsWith(a, "/") && !startsWith(b, "/")) {
+    a <- paste0(a, "/")
+  }
+  paste0(a, b)
+}
+
+
+
 CallSet <- R6::R6Class(
   "CallSet",
   public = list(
@@ -11,11 +33,10 @@ CallSet <- R6::R6Class(
       design <- process_objects(design)
 
       # add id to existing id, or create new unique id
-      if (!endsWith(id, "/")) id <- paste0(id, "/")
       if ("id" %in% names(design)) {
-        design$id <- paste0(id, design$id)
+        design$id <- concatenate_ids(id, design$id)
       } else {
-        design$id <- paste0(id, seq_len(nrow(design)))
+        design$id <- concatenate_ids(id, seq_len(nrow(design)))
       }
 
       self$design <- design
@@ -94,7 +115,7 @@ CallCollection <- R6::R6Class(
       # adapt ids
       if (id != "") {
         walk(self$design$calls, function(call) {
-          call$id <- paste0(id, "/", call$id)
+          call$id <- concatenate_ids(id, call$id)
           call$design$id <- call$id
         })
 
@@ -148,7 +169,7 @@ load_call <- function(
 
   # adapt ids
   walk(call$design$calls, function(call) {
-    call$id <- paste0(id, "/", call$id)
+    call$id <- concatenate_ids(id, call$id)
     call$design$id <- call$id
   })
   call$design$id <- call$design$calls %>% map_chr("id")
