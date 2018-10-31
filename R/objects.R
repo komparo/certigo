@@ -19,6 +19,9 @@ Object <- R6Class(
         },
         error = function(e) {
           e$message
+        },
+        warning = function(e) {
+          e$message
         }
       )
 
