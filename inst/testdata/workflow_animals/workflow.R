@@ -5,6 +5,19 @@ library(stringr)
 
 library(certigo)
 
+animal_cuteness <- R6::R6Class(
+  "animal_cuteness",
+  inherit = DerivedFile,
+  list(
+    valid = function(design) {
+      super$valid()
+      animal_cuteness <- read_csv(self$path, col_types = cols(animal = col_character(), cuteness = col_double()))
+      validate(all(animal_cuteness$cuteness >= 0))
+      validate(!any(is.na(animal_cuteness)))
+    }
+  )
+)$new
+
 design <- tibble(
   animal = c("dog", "cat", "horse", "tortoise", "fly", "bird"),
   cuteness_mean = c(1, 0.9, 0.8, 0.6, 0.1, 0.4),
@@ -14,7 +27,7 @@ design <- tibble(
     parameters = dynutils::mapdf(., parameters),
     script = list(script_file("scripts/determine_animal_cuteness.R")),
     executor = list(docker_executor(container = "rocker/tidyverse")),
-    animal_cuteness = str_glue("derived/animal_cuteness/{animal}.csv") %>% map(derived_file)
+    animal_cuteness = str_glue("derived/animal_cuteness/{animal}.csv") %>% map(animal_cuteness)
   )
 
 determine_animal_cuteness <- rscript_call(

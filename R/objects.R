@@ -12,8 +12,19 @@ Object <- R6Class(
     history = NULL,
     write_history = function(call_digest) {stop("Write history not implemented for", self$id)},
     validate = function(design) {
-      stop("Validate not not implemented for", self$id)
-    }
+      # either return TRUE, or a character vector containing what is not correct
+      result <- tryCatch({
+          self$valid(design)
+          TRUE
+        },
+        error = function(e) {
+          e$message
+        }
+      )
+
+      result
+    },
+    valid = function(design) {TRUE}
   ),
   active = list(
     digest = function() {
@@ -92,8 +103,9 @@ File <- R6Class(
 
       dir_create(path_dir(path), recursive = TRUE)
     },
-    validate = function(design) {
-      file_exists(self$path)
+    valid = function(design) {
+      validate(file_exists(self$path), "File exists")
+      super$valid()
     },
     read_history = function() {
       jsonlite::read_json(self$history_path, simplifyVector = TRUE)
@@ -322,10 +334,6 @@ Parameters <- R6Class(
         jsonlite::write_json(parameters, parameters_file)
       }
       self$string <- parameters_file
-    },
-    validate = function(design) {
-      # TODO: validation for serialisable objects
-      TRUE
     }
   ),
   active = list(

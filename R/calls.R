@@ -82,6 +82,7 @@ Call <- R6Class(
       if (!self$cached) {
         self$executor$wait()
 
+        # Check whether the process successfully finished
         if (self$executor$status %in% c("success")) {
           cat_line(col_split(crayon_ok("\U2714 Finished"), self$id))
         } else if (self$executor$status %in% c("errored")) {
@@ -96,20 +97,25 @@ Call <- R6Class(
         output_validations <- map_lgl(self$outputs, function(output) {
           validation <- output$validate(self$design)
           if (is.character(validation)) {
-            cat_line(col_split(crayon_warning("\U274C", output$id, "->", validation), self$id))
+            cat_line(col_split(crayon_warning("\U274C Output validation"), self$id))
+            cat_line(crayon_warning("File: ", crayon::italic(output$id)))
+            cat_line(crayon_warning("Problem: ", crayon::bold(validation)))
             FALSE
           } else {
             TRUE
           }
         })
 
+        # if output is not valid:
+        # -> Delete all outputs
+        # -> Stop execution
         if (!all(output_validations)) {
           cat_line(col_split(crayon_error("\U274C Output"), self$id))
           map(self$outputs, "delete") %>% invoke_map()
-          stop("Some output not present but required")
+          stop(crayon_error("Some output not valid"), call. = FALSE)
         }
 
-        # write all output histories including the digest of the call
+        # write all output histories, which includes the digest of the call
         walk(self$outputs, function(output) {
           output$write_history(call_digest = self$digest)
         })
