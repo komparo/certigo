@@ -1,4 +1,4 @@
-context("Testing formats")
+context("Testing validation")
 
 source(system.file("testdata/workflow_animals/setup.R", package = "certigo"))
 
