@@ -119,7 +119,7 @@ File <- R6Class(
       jsonlite::write_json(history, history_path(self$path))
     },
     delete = function() {
-      if (file_exists(self$path)) file_delete(self$path)
+      if (file_exists(self$path) && is_file(self$path)) file_delete(self$path)
       if (self$exists_history) file_delete(history_path(self$path))
     }
   ),
