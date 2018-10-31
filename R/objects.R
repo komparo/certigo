@@ -10,7 +10,21 @@ Object <- R6Class(
     id = NULL,
     string = NULL,
     history = NULL,
-    write_history = function(call_digest) {stop("Write history not implemented for", self$id)}
+    write_history = function(call_digest) {stop("Write history not implemented for", self$id)},
+    validate = function(design) {
+      # either return TRUE, or a character vector containing what is not correct
+      result <- tryCatch({
+          self$valid(design)
+          TRUE
+        },
+        error = function(e) {
+          e$message
+        }
+      )
+
+      result
+    },
+    valid = function(design) {TRUE}
   ),
   active = list(
     digest = function() {
@@ -37,6 +51,9 @@ Docker <- R6Class(
       self$image <- image
       self$id <- image
       self$string <- image
+    },
+    validate = function(design) {
+      TRUE
     }
   ),
   active = list(
@@ -85,6 +102,10 @@ File <- R6Class(
       self$history_path <- history_path(path)
 
       dir_create(path_dir(path), recursive = TRUE)
+    },
+    valid = function(design) {
+      validate(file_exists(self$path), "File exists")
+      super$valid()
     },
     read_history = function() {
       jsonlite::read_json(self$history_path, simplifyVector = TRUE)
@@ -411,11 +432,6 @@ ObjectSet <- R6Class(
 #' @rdname object
 #' @export
 object_set <- ObjectSet$new
-
-
-
-
-
 
 
 path_is_child <- function(path, start = ".") {

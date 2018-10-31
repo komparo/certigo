@@ -45,7 +45,7 @@ Call <- R6Class(
       # make sure all inputs are present
       existing_input <- map_lgl(self$inputs, function(input) {
         if (TRUE && !input$exists) {
-          cat_line(col_split(self$id, crayon_error("\U274C Input does not exist: ", input$id)))
+          cat_line(col_split(crayon_error("\U274C Input does not exist: ", input$id), self$id))
           FALSE
         } else {
           TRUE
@@ -65,12 +65,12 @@ Call <- R6Class(
       # if an output is not present, its call digest will be NA, which will always trigger a rerun
       if(all(!is.na(output_call_digests)) && all(output_call_digests == call_digest)) {
         # cached
-        cat_line(col_split(self$id, crayon_ok("\U23F0 Cached")))
+        cat_line(col_split(crayon_ok("\U23F0 Cached"), self$id))
         self$cached <- TRUE
       } else {
         # start the executor
         self$executor$start(self$command, self$args)
-        cat_line(col_split(self$id, crayon_info("\U25BA Started")))
+        cat_line(col_split(crayon_info("\U25BA Started"), self$id))
         self$cached <- FALSE
       }
     },
@@ -82,44 +82,40 @@ Call <- R6Class(
       if (!self$cached) {
         self$executor$wait()
 
+        # Check whether the process successfully finished
         if (self$executor$status %in% c("success")) {
-          cat_line(col_split(self$id, crayon_ok("\U2714 Finished")))
+          cat_line(col_split(crayon_ok("\U2714 Finished"), self$id))
         } else if (self$executor$status %in% c("errored")) {
-          cat_line(col_split(self$id, crayon_error("\U274C Errored")))
+          cat_line(col_split(crayon_error("\U274C Errored"), self$id))
           map(self$outputs, "delete") %>% invoke_map()
           cat_line(self$executor$error %>% tail(10))
         } else {
           stop("Process neither did not success nor error, was it started?")
         }
 
-        # check whether output is present
-        find_existing_output <- function() {
-          existing_output <- map_lgl(self$outputs, function(output) {
-            if (TRUE && !output$exists) {
-              cat_line(col_split(self$id, crayon_warning("\U274C Output does not exist: ", output$id)))
-              FALSE
-            } else {
-              TRUE
-            }
-          })
-        }
-
-        # if some output is not present, error
-        existing_output <- find_existing_output()
-        if (any(!existing_output)) {
-          wait_time <- 1
-          cat_line(col_split(self$id, crayon_warning("\U274C Not all output present, waiting", wait_time, "seconds")))
-          Sys.sleep(wait_time)
-
-          existing_output <- find_existing_output()
-          if (any(!existing_output)) {
-            cat_line(col_split(self$id, crayon_error("\U274C Output")))
-            map(self$outputs, "delete") %>% invoke_map()
-            stop("Some output not present but required")
+        # check the output
+        output_validations <- map_lgl(self$outputs, function(output) {
+          validation <- output$validate(self$design)
+          if (is.character(validation)) {
+            cat_line(col_split(crayon_warning("\U274C Output validation"), self$id))
+            cat_line(crayon_warning("File: ", crayon::italic(output$id)))
+            cat_line(crayon_warning("Problem: ", crayon::bold(validation)))
+            FALSE
+          } else {
+            TRUE
           }
+        })
+
+        # if output is not valid:
+        # -> Delete all outputs
+        # -> Stop execution
+        if (!all(output_validations)) {
+          cat_line(col_split(crayon_error("\U274C Output"), self$id))
+          map(self$outputs, "delete") %>% invoke_map()
+          stop(crayon_error("Some output not valid"), call. = FALSE)
         }
 
-        # write all output histories including the digest of the call
+        # write all output histories, which includes the digest of the call
         walk(self$outputs, function(output) {
           output$write_history(call_digest = self$digest)
         })

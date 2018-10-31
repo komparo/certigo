@@ -10,18 +10,18 @@
 \usage{
 Call
 
-rscript_call(id = "", inputs, outputs, design = NULL)
+rscript_call(id = "", design, inputs, outputs)
 
-rmd_call(id = "", inputs, outputs, design = NULL)
+rmd_call(id = "", design, inputs, outputs)
 }
 \arguments{
 \item{id}{The name of the call}
 
+\item{design}{The design}
+
 \item{inputs}{The inputs}
 
 \item{outputs}{The outputs}
-
-\item{design}{The design}
 }
 \description{
 A call

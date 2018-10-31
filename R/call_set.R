@@ -1,28 +1,60 @@
+# concatenate the ids with forward slashes in between
+concatenate_ids <- function(a, b) {
+  if (is.null(a) || a == "") {
+    return(b)
+  }
+  if (is.null(b) || b == "") {
+    return(a)
+  }
+  if (is.numeric(a)) {
+    a <- as.character(a)
+  }
+  if (is.numeric(b)) {
+    b <- as.character(b)
+  }
+  if (!endsWith(a, "/") && !startsWith(b, "/")) {
+    a <- paste0(a, "/")
+  }
+  paste0(a, b)
+}
+
+
+
 CallSet <- R6::R6Class(
   "CallSet",
   public = list(
     design = NULL,
     id = NULL,
-    input_ids = NULL,
-    output_ids = NULL,
-    initialize = function(id, call_class, design, input_ids, output_ids) {
+    inputs = NULL,
+    outputs = NULL,
+    initialize = function(id, call_class, design, input_exprs, output_exprs) {
       self$id <- id
 
       design <- process_objects(design)
-      design$id <- paste0(id, seq_len(nrow(design)))
 
-      testthat::expect_true(all(input_ids %in% names(design)))
-      testthat::expect_true(all(output_ids %in% names(design)))
+      # add id to existing id, or create new unique id
+      if ("id" %in% names(design)) {
+        design$id <- concatenate_ids(id, design$id)
+      } else {
+        design$id <- concatenate_ids(id, seq_len(nrow(design)))
+      }
 
       self$design <- design
-      self$input_ids <- input_ids
-      self$output_ids <- output_ids
+      self$inputs <- design %>% transmute(!!!input_exprs)
+      self$outputs <- design %>% transmute(!!!output_exprs)
 
       # create calls
-      self$design$calls <- pmap(design, function(...) {
-        design_row <- list(...)
+      self$design$calls <- map(seq_len(nrow(self$design)), function(call_ix) {
+        design <- self$design %>% dynutils::extract_row_to_list(call_ix)
+        inputs <- self$inputs %>% dynutils::extract_row_to_list(call_ix)
+        outputs <- self$outputs %>% dynutils::extract_row_to_list(call_ix)
 
-        call_class$new(design_row$id, design = design_row, inputs = design_row[self$input_ids], outputs = design_row[self$output_ids])
+        call_class$new(
+          design$id,
+          design = design,
+          inputs = inputs,
+          outputs = outputs
+        )
       })
     },
     start = function() {
@@ -42,17 +74,13 @@ CallSet <- R6::R6Class(
     }
   ),
   active = list(
-    inputs = function(...) self$design %>% select(!!self$input_ids),
-    outputs = function(...) self$design %>% select(!!self$output_ids),
     calls = function(...) self$design$calls
   )
 )
 
 calls_factory <- function(class) {
-  function(id = "", inputs, outputs, design = NULL) {
-    # input_ids <- rlang::enquo(inputs)
-    # output_ids <- rlang::enquo(outputs)
-    CallSet$new(id, class, design, input_ids = inputs, output_ids = outputs)
+  function(id = "", design, inputs, outputs) {
+    CallSet$new(id, class, design, input_exprs = inputs, output_exprs = outputs)
   }
 }
 
@@ -80,30 +108,28 @@ process_objects <- function(x) {
 CallCollection <- R6::R6Class(
   "CallCollection",
   public = list(
-    calls = list(),
-    inputs = NULL,
-    outputs = NULL,
     design = NULL,
     initialize = function(id, ...) {
-      # create common calls and common design
-      self$calls <- list(...) %>% map("calls") %>% flatten()
+      self$design <- map(list(...), "design") %>% bind_rows()
 
       # adapt ids
-      walk(self$calls, function(call) {
-        call$id <- paste0(id, "/", call$id)
-        call$design$id <- call$id
-      })
+      if (id != "") {
+        walk(self$design$calls, function(call) {
+          call$id <- concatenate_ids(id, call$id)
+          call$design$id <- call$id
+        })
 
-      # check call ids
-      call_ids <- map(self$calls, "id")
-      if (any(duplicated(call_ids))) {
-        stop("Duplicated call ids: ", unique(call_ids[duplicated(call_ids)]) %>% glue::glue_collapse(", "))
+        self$design$id <- map_chr(self$design$calls, "id")
       }
 
-      # merge inputs, outputs and design
-      self$design <- self$calls %>% map("design") %>% dynutils::list_as_tibble()
-      self$design$id <- self$calls %>% map_chr("id")
+      # check for duplicated ids
+      if (any(duplicated(self$design$id))) {
+        stop("Duplicated call ids: ", unique(self$design$id[duplicated(self$design$id)]) %>% glue::glue_collapse(", "))
+      }
     }
+  ),
+  active = list(
+    calls = function(...) self$design$calls
   )
 )
 
@@ -143,7 +169,7 @@ load_call <- function(
 
   # adapt ids
   walk(call$design$calls, function(call) {
-    call$id <- paste0(id, "/", call$id)
+    call$id <- concatenate_ids(id, call$id)
     call$design$id <- call$id
   })
   call$design$id <- call$design$calls %>% map_chr("id")
@@ -165,7 +191,7 @@ load_call_git <- function(
   pull_or_clone(repo, local_path)
 
   id <- id %>%
-    gsub("https://github.com", "\U1F4E1", .)
+    gsub("https://github.com/", "", .)
 
   load_call(fs::path(local_path, call_path), id = id, ...)
 }
