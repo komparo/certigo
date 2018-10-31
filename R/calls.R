@@ -89,6 +89,7 @@ Call <- R6Class(
           cat_line(col_split(crayon_error("\U274C Errored"), self$id))
           map(self$outputs, "delete") %>% invoke_map()
           cat_line(self$executor$error %>% tail(10))
+          stop(crayon_error("Process errored"), call. = FALSE)
         } else {
           stop("Process neither did not success nor error, was it started?")
         }
