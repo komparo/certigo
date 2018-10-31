@@ -1,5 +1,6 @@
 context("Testing validation")
 
+library(readr)
 source(system.file("testdata/workflow_animals/setup.R", package = "certigo"))
 
 object <- animal_cuteness("animal_cuteness.csv")

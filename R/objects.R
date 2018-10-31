@@ -434,11 +434,6 @@ ObjectSet <- R6Class(
 object_set <- ObjectSet$new
 
 
-
-
-
-
-
 path_is_child <- function(path, start = ".") {
   startsWith(fs::path_abs(path), fs::path_real(start))
 }
