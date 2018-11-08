@@ -62,12 +62,12 @@ Call <- R6Class(
       }
 
       # check whether all call_digests of the outputs match with the current output digest
-      output_call_digests <- map_chr(self$outputs, "call_digest")
+      output_call_digests <- map(self$outputs, "call_digest")
       call_digest <- self$digest
 
       # choose between cached or actual execution
-      # if an output is not present, its call digest will be NA, which will always trigger a rerun
-      if(all(!is.na(output_call_digests)) && all(output_call_digests == call_digest)) {
+      # if an output is not present, its call digest will be NULL, which will always trigger a rerun
+      if(all(!is.na(output_call_digests)) && all(map_lgl(output_call_digests, identical, y = call_digest))) {
         # cached
         cat_line(col_split(crayon_ok("\U23F0 Cached"), self$id))
         self$cached <- TRUE
@@ -200,13 +200,12 @@ RscriptCall <- R6Class(
   ),
   active = list(
     digest = function() {
-      input_digests <- map(self$inputs, "digest")
-      output_strings <- map(self$outputs, "string")
-      paste0(
-        "R ",
-        glue::glue_collapse(input_digests, " "),
-        " ",
-        glue::glue_collapse(output_strings, " ")
+      input_digests <- map_chr(self$inputs, "digest") %>% as.list()
+      output_strings <- map_chr(self$outputs, "string") %>% as.list()
+
+      list(
+        inputs = input_digests,
+        outputs = output_strings
       )
     }
   )
