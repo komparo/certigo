@@ -20,6 +20,10 @@ Call <- R6Class(
       self$id <- id
 
       # check inputs and outputs ----------------------
+      # test whether all inputs and ouputs are named
+      testthat::expect_true(length(unique(names(inputs))) == length(inputs), "All inputs should be named")
+      testthat::expect_true(length(unique(names(outputs))) == length(outputs), "All outputs should be named")
+
       # test whether all inputs and outputs are objects
       testthat::expect_true(all(map_lgl(inputs, ~"Object" %in% class(.))), "All inputs should be an Object")
       testthat::expect_true(all(map_lgl(outputs, ~"Object" %in% class(.))), "All outputs should be an Object")
