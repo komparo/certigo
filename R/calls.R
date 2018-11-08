@@ -20,6 +20,10 @@ Call <- R6Class(
       self$id <- id
 
       # check inputs and outputs ----------------------
+      # test whether all inputs and ouputs are named
+      testthat::expect_true(length(unique(names(inputs))) == length(inputs), "All inputs should be named")
+      testthat::expect_true(length(unique(names(outputs))) == length(outputs), "All outputs should be named")
+
       # test whether all inputs and outputs are objects
       testthat::expect_true(all(map_lgl(inputs, ~"Object" %in% class(.))), "All inputs should be an Object")
       testthat::expect_true(all(map_lgl(outputs, ~"Object" %in% class(.))), "All outputs should be an Object")
@@ -58,12 +62,12 @@ Call <- R6Class(
       }
 
       # check whether all call_digests of the outputs match with the current output digest
-      output_call_digests <- map_chr(self$outputs, "call_digest")
+      output_call_digests <- map(self$outputs, "call_digest")
       call_digest <- self$digest
 
       # choose between cached or actual execution
-      # if an output is not present, its call digest will be NA, which will always trigger a rerun
-      if(all(!is.na(output_call_digests)) && all(output_call_digests == call_digest)) {
+      # if an output is not present, its call digest will be NULL, which will always trigger a rerun
+      if(all(!is.na(output_call_digests)) && all(map_lgl(output_call_digests, identical, y = call_digest))) {
         # cached
         cat_line(col_split(crayon_ok("\U23F0 Cached"), self$id))
         self$cached <- TRUE
@@ -84,11 +88,12 @@ Call <- R6Class(
 
         # Check whether the process successfully finished
         if (self$executor$status %in% c("success")) {
-          cat_line(col_split(crayon_ok("\U2714 Finished"), self$id))
+          # do nothing
         } else if (self$executor$status %in% c("errored")) {
           cat_line(col_split(crayon_error("\U274C Errored"), self$id))
           map(self$outputs, "delete") %>% invoke_map()
           cat_line(self$executor$error %>% tail(10))
+          stop(crayon_error("Process errored"), call. = FALSE)
         } else {
           stop("Process neither did not success nor error, was it started?")
         }
@@ -97,7 +102,7 @@ Call <- R6Class(
         output_validations <- map_lgl(self$outputs, function(output) {
           validation <- output$validate(self$design)
           if (is.character(validation)) {
-            cat_line(col_split(crayon_warning("\U274C Output validation"), self$id))
+            cat_line(col_split(crayon_warning("\U274C Validation"), self$id))
             cat_line(crayon_warning("File: ", crayon::italic(output$id)))
             cat_line(crayon_warning("Problem: ", crayon::bold(validation)))
             FALSE
@@ -114,6 +119,8 @@ Call <- R6Class(
           map(self$outputs, "delete") %>% invoke_map()
           stop(crayon_error("Some output not valid"), call. = FALSE)
         }
+
+        cat_line(col_split(crayon_ok("\U2714 Finished"), self$id))
 
         # write all output histories, which includes the digest of the call
         walk(self$outputs, function(output) {
@@ -193,13 +200,12 @@ RscriptCall <- R6Class(
   ),
   active = list(
     digest = function() {
-      input_digests <- map(self$inputs, "digest")
-      output_strings <- map(self$outputs, "string")
-      paste0(
-        "R ",
-        glue::glue_collapse(input_digests, " "),
-        " ",
-        glue::glue_collapse(output_strings, " ")
+      input_digests <- map_chr(self$inputs, "digest") %>% as.list()
+      output_strings <- map_chr(self$outputs, "string") %>% as.list()
+
+      list(
+        inputs = input_digests,
+        outputs = output_strings
       )
     }
   )

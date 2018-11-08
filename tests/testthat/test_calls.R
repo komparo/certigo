@@ -5,7 +5,6 @@ source(system.file("testdata/workflow_animals/setup.R", package = "certigo"))
 ##  ............................................................................
 ##  Test individual calls                                                   ####
 # determine_animal_cuteness$start_and_wait()
-
 expect_rerun(determine_animal_cuteness$start_and_wait())
 
 # cached

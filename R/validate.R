@@ -19,13 +19,13 @@ add_validators <- function(parent_initialize, validator_function) {
 
 # Returns TRUE if expression is TRUE
 # Returns info otherwise
-validate <- function(expr, info = NULL) {
+validate <- function(expr, info = NULL, hint = NULL) {
   expr <- enquo(expr)
   if (is.null(info)) {
     info <- deparse_friendly(expr)
   }
   result <- rlang::eval_tidy(expr)
   if (!isTRUE(result)) {
-    stop(info, call. = FALSE)
+    stop(info, hint, call. = FALSE)
   }
 }
