@@ -190,8 +190,7 @@ load_call_git <- function(
 ) {
   pull_or_clone(repo, local_path)
 
-  id <- id %>%
-    gsub("https://github.com/", "", .)
+  id <- gsub("https://github.com/", "", id)
 
   load_call(fs::path(local_path, call_path), id = id, ...)
 }
