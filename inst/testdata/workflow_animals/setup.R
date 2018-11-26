@@ -11,7 +11,6 @@ create_workflow_dir <- function() {
 }
 
 # build the docker image
-# processx::run("docker", c("build", "-t", "certigo/plot_animal_cuteness", system.file('testdata/workflow_animals/containers/plot_animal_cuteness/', package = 'certigo')), echo = F)
 
 # some testing functions
 expect_rerun <- function(x) {expect_output(x, "^.*Finished.*$", info = "Expected a rerun")}

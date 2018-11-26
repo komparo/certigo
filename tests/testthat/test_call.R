@@ -13,8 +13,9 @@ expect_rerun(call$start_and_wait())
 
 call <- rscript_call(
   "determine_animal_cuteness",
-  design = design,
-  inputs = exprs(parameters, script),
+  design = design %>%
+    mutate(executor = list(docker_executor(container = "certigo/animal_cuteness"))),
+  inputs = exprs(parameters, script, executor),
   outputs = exprs(animal_cuteness, resources)
 )
 

@@ -23,7 +23,6 @@ design <- tibble(
   mutate(
     parameters = dynutils::mapdf(., parameters),
     script = list(script_file("scripts/determine_animal_cuteness.R")),
-    executor = list(docker_executor(container = "rocker/tidyverse")),
     animal_cuteness = str_glue("derived/animal_cuteness/{animal}.csv") %>% map(derived_file),
     resources = str_glue("derived/animal_cuteness/{animal}_resources.json") %>% map(derived_file)
   )
@@ -53,9 +52,10 @@ plot_animal_cuteness <- rscript_call(
     mutate(
       script = list(script_file("scripts/plot_animal_cuteness.R")),
       plot = list(derived_file("results/animal_cuteness.pdf")),
-      resources = list(derived_file("results/plotting_resources.json"))
+      resources = list(derived_file("results/plotting_resources.json")),
+      executor = list(docker_executor(container = "certigo/animal_cuteness"))
     ),
-  inputs = exprs(script, animal_cuteness),
+  inputs = exprs(script, animal_cuteness, executor),
   outputs = exprs(plot, resources)
 )
 

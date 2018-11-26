@@ -14,7 +14,7 @@ test_that("ProcessExecutor", {
 
 test_that("DockerExecutor", {
   # normal execution
-  executor <- docker_executor("certigo/plot_animal_cuteness")
+  executor <- docker_executor("certigo/animal_cuteness")
   executor$start("echo", "hi")
   executor$wait()
   expect_true(executor$exists)
@@ -22,7 +22,7 @@ test_that("DockerExecutor", {
 
   # execution with resources
   resources_file <- certigo_tmp_file()
-  executor <- docker_executor("certigo/plot_animal_cuteness")
+  executor <- docker_executor("certigo/animal_cuteness")
   executor$start("echo", "hi", resources_file = resources_file)
   executor$wait()
 

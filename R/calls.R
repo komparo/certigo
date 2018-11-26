@@ -34,9 +34,9 @@ Call <- R6Class(
         testthat::expect_equal(nrow(inputs), nrow(design))
       }
 
-      # add local executor if not present in inputs
+      # add default executor if not present in inputs
       if (!"executor" %in% names(inputs)) {
-        inputs$executor <- local_executor()
+        inputs$executor <- docker_executor("rocker/tidyverse")
       }
       self$executor <- inputs$executor$clone()
 
