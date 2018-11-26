@@ -48,5 +48,14 @@ test_that("Rscript calls", {
   )
   expect_is(call$calls[[1]]$executor, "LocalExecutor")
   expect_rerun(call$start_and_wait())
+
+  # output does not exist
+  fs::file_delete(path_workflow(call$outputs$sample[[1]]$string))
+  expect_is(call$outputs$sample[[1]]$validate(), "character")
+  expect_error(expect_output(call$wait()))
+
+  # input does not exist
+  fs::file_delete(path_workflow(call$inputs$script[[1]]$path))
+  expect_error(expect_output(call$start_and_wait()))
 })
 
