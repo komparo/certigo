@@ -36,7 +36,7 @@ Call <- R6Class(
 
       # add default executor if not present in inputs
       if (!"executor" %in% names(inputs)) {
-        inputs$executor <- docker_executor("rocker/tidyverse")
+        inputs$executor <- get_default_executor()
       }
       self$executor <- inputs$executor$clone()
 

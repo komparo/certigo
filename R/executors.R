@@ -206,3 +206,10 @@ DockerExecutor <- R6Class(
 #' @rdname executor
 #' @export
 docker_executor <- DockerExecutor$new
+
+
+
+
+get_default_executor <- function() {
+  getOption("certigo_executor", default = docker_executor("rocker/tidyverse"))
+}
