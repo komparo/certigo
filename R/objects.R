@@ -102,6 +102,7 @@ File <- R6Class(
       if (is.null(path)) {stop("Path cannot be null")}
 
       path <- fs::path_norm(path) # cleanup path (eg. remove "//", or remove "./")
+      # path <- fs::path_rel(path, path_workflow())
 
       self$path <- path
       self$id <- path
@@ -225,28 +226,15 @@ RawFile <- R6Class(
     initialize = function(path) {
       # add workflow directory to path if defined (when using modules)
       # TODO: change this to a more clear "module_raw_directory" option
-      path <- fs::path(getOption("workflow_directory", default = "./"), path)
+      if (!fs::is_absolute_path(path)) {
+        path <- fs::path(getOption("workflow_directory", default = "./"), path)
+      }
 
       super$initialize(path)
 
       # check if raw file exists
       if (!file_exists(path_workflow(path))) {
         stop("\U274C Raw file does not exist: ",  crayon::italic(path))
-      }
-
-      # if the file is not within the current working directory, place it in the .certigo folder
-      # as to make sure it gets mounted inside containers
-      if (!path_is_child(path, ".")) {
-        new_path <- path_workflow(".certigo/files/", self$digest)
-        if (!fs::file_exists(path_workflow(new_path))) {
-          fs::dir_create(path_workflow(fs::path_dir(new_path)), recursive = TRUE)
-          fs::file_copy(
-            path,
-            new_path
-          )
-        }
-        path <- new_path
-        self$string <- path
       }
 
       # add history if it does not exist, otherwise check whether the history is up to date
