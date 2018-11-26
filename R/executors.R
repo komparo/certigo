@@ -151,11 +151,22 @@ DockerExecutor <- R6Class(
       self$string <- container
       self$id <- paste0("docker: ", container)
       self$user_id <- system("id -u", intern = TRUE)
+
+      # check if the image exists and its digest
+      digest <- processx::run(
+        "docker",
+        c("inspect", "--type=image", container, paste0("--format='{{ .Id }}'")),
+        error_on_status = FALSE
+      )$stdout %>%
+      stringr::str_replace_all("['\\n]", "")
+
+      private$exists_cached <- digest != ""
+      private$digest_cached <- digest
     },
     start = function(command, args, resources_file = FALSE) {
       # check whether resources are requested
       # for docker, this requires that /usr/bin/time is installed (https://packages.debian.org/jessie/time)
-      # this is the case for ubuntu, but not for debian
+      # this is usually not the case (e.g. ubuntu, debian, ...)
       if (!is.null(resources_file) && is.character(resources_file)) {
         # extra checks to make sure the correct resource_file is given:
         # - character
@@ -188,9 +199,13 @@ DockerExecutor <- R6Class(
       super$start(command, args, resources = NULL)
     }
   ),
+  private = list(
+    digest_cached = NULL,
+    exists_cached = NULL
+  ),
   active = list(
-    digest = function(...) "docker",
-    exists = function(...) TRUE
+    digest = function(...) private$digest_cached,
+    exists = function(...) private$exists_cached
   )
 )
 

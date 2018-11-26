@@ -1,4 +1,4 @@
-context("Testing individual calls")
+context("Testing connected calls")
 
 source(system.file("testdata/workflow_animals/setup.R", package = "certigo"))
 
