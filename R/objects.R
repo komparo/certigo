@@ -49,39 +49,6 @@ Object <- R6Class(
   )
 )
 
-Docker <- R6Class(
-  "Docker",
-  inherit = Object,
-  public = list(
-    image = NULL,
-    initialize = function(image) {
-      self$image <- image
-      self$id <- image
-      self$string <- image
-    },
-    validate = function(design) {
-      TRUE
-    }
-  ),
-  active = list(
-    label = function(...) fontawesome_map["box"],
-    digest = function() {
-      process <- processx::run("docker", c("inspect", "--format={{.ID}}", self$image))
-
-      process$stdout %>% trimws()
-    },
-    exists = function() {
-      process <- processx::run("docker", c("inspect", "--format={{.ID}}", self$image), error_on_status = FALSE)
-      process$status == 0
-    }
-  )
-)
-
-
-#' @rdname object
-#' @export
-docker <- Docker$new
-
 history_path <- function(path) {
   paste0(
     path_dir(path),

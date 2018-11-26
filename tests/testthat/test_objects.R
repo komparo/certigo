@@ -2,17 +2,6 @@ context("Testing objects")
 
 source(system.file("testdata/workflow_animals/setup.R", package = "certigo"))
 
-test_that("Docker objects", {
-  docker <- docker("ubuntu")
-  expect_true(docker$exists)
-  expect_is(docker$digest, "character")
-
-  docker <- docker("blabla")
-  expect_false(docker$exists)
-  expect_error(docker$digest)
-})
-
-
 test_that("Raw files", {
   temp_file <- tempfile(tmpdir = path_workflow("raw")) %>% fs::path_rel(path_workflow())
   readr::write_csv(tibble::tibble(x = 1:2), path_workflow(temp_file))
