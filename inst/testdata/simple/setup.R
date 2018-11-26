@@ -5,9 +5,9 @@ library(fs)
 create_workflow_dir <- function() {
   tempdir <- tempfile()
   dir.create(tempdir)
-  dir_copy(system.file("testdata/workflow_animals", package = "certigo"), tempdir)
+  dir_copy(system.file("testdata/simple", package = "certigo"), tempdir)
 
-  options(certigo_root = paste0(tempdir, "/workflow_animals"))
+  options(certigo_root = paste0(tempdir, "/simple"))
 }
 
 # some testing functions
@@ -17,5 +17,3 @@ expect_cached <- function(x) {expect_output(x, "^.*Cached.*$", info = "Expected 
 expect_cached_somewhere <- function(x) {expect_output(x, ".*Cached.*", info = "Expected a cached")}
 
 create_workflow_dir()
-
-source(system.file("testdata/workflow_animals/workflow.R", package = "certigo"))
