@@ -155,7 +155,7 @@ load_call <- function(
 ) {
   call_environment <- new.env()
 
-  source(call_path, local = call_environment)
+  source(path_workflow(call_path), local = call_environment)
   call_generator <- get("get_call", call_environment)
 
   # load call
@@ -190,18 +190,17 @@ load_call_git <- function(
 ) {
   pull_or_clone(repo, local_path)
 
-  id <- id %>%
-    gsub("https://github.com/", "", .)
+  id <- gsub("https://github.com/", "", id)
 
-  load_call(fs::path(local_path, call_path), id = id, ...)
+  load_call(path_workflow(fs::path(local_path, call_path)), id = id, ...)
 }
 
 
 
 pull_or_clone <- function(repo, local_path) {
   if (fs::dir_exists(local_path)) {
-    git2r::pull(local_path)
+    git2r::pull(path_workflow(local_path))
   } else {
-    git2r::clone(repo, local_path = local_path)
+    git2r::clone(repo, local_path = path_workflow(local_path))
   }
 }

@@ -14,3 +14,16 @@ load_fontawesome <- function() {
     sink()
   }
 }
+
+
+#   ____________________________________________________________________________
+#   Get root of objects                                                     ####
+
+get_object_root <- function() {
+  getOption("certigo_root", ".")
+}
+
+
+path_workflow <- function(...) {
+  fs::path(get_object_root(), ...)
+}
