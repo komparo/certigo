@@ -10,7 +10,7 @@ write_csv(
     animal = c("dog", "cat", "cat"),
     cuteness = c(1, 2, 0)
   ),
-  "animal_cuteness.csv"
+  path_workflow("animal_cuteness.csv")
 )
 
 testthat::expect_true(object$validate())
@@ -20,7 +20,7 @@ write_csv(
     animal = c("dog", "cat", "cat"),
     cuteness = c(-1, 2, 0)
   ),
-  "animal_cuteness.csv"
+  path_workflow("animal_cuteness.csv")
 )
 
 testthat::expect_error(object$valid(), info = "When wrong format, valid should error")

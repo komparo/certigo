@@ -65,6 +65,9 @@ Call <- R6Class(
       output_call_digests <- map(self$outputs, "call_digest")
       call_digest <- self$digest
 
+      # check whether resources output is requested
+      resources_requested <- "resources" %in% names(self$outputs)
+
       # choose between cached or actual execution
       # if an output is not present, its call digest will be NULL, which will always trigger a rerun
       if(all(!is.na(output_call_digests)) && all(map_lgl(output_call_digests, identical, y = call_digest))) {
@@ -73,7 +76,7 @@ Call <- R6Class(
         self$cached <- TRUE
       } else {
         # start the executor
-        self$executor$start(self$command, self$args)
+        self$executor$start(self$command, self$args, resources_file = self$outputs$resources$string)
         cat_line(col_split(crayon_info("\U25BA Started"), self$id))
         self$cached <- FALSE
       }
@@ -182,15 +185,21 @@ RscriptCall <- R6Class(
       input_strings <- self$inputs[-which(names(self$inputs) %in% c("script", "executor"))] %>% map("string")
       output_strings <- self$outputs %>% map("string")
 
-      fs::dir_create(".certigo/object_sets", recursive = TRUE)
+      fs::dir_create(path_workflow(".certigo/object_sets"), recursive = TRUE)
       input_path <- tempfile(tmpdir = ".certigo/object_sets")
-      jsonlite::write_json(input_strings, input_path)
+      jsonlite::write_json(input_strings, path_workflow(input_path))
       output_path <- tempfile(tmpdir = ".certigo/object_sets")
-      jsonlite::write_json(output_strings, output_path)
+      jsonlite::write_json(output_strings, path_workflow(output_path))
 
       self$args <- c(
         "-e",
-        glue::glue("inputs <- jsonlite::read_json('{input_path}', simplifyVector = TRUE);outputs <- jsonlite::read_json('{output_path}', simplifyVector = TRUE);pdf(NULL);{source_command}")
+        glue::glue(
+          "inputs <- jsonlite::read_json('{input_path}', simplifyVector = TRUE)",
+          "outputs <- jsonlite::read_json('{output_path}', simplifyVector = TRUE)",
+          "pdf(NULL)",
+          "{source_command}",
+          .sep = "; "
+        )
       )
     },
     debug = function() {

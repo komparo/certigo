@@ -12,8 +12,11 @@ Object <- R6Class(
     history = NULL,
     write_history = function(call_digest) {stop("Write history not implemented for", self$id)},
     validate = function(design) {
-      # either return TRUE, or a character vector containing what is not correct
-      result <- tryCatch({
+      # run inside workflow directory
+      withr::with_dir(
+        path_workflow(),
+        # either return TRUE, or a character vector containing what is not correct
+        result <- tryCatch({
           self$valid(design)
           TRUE
         },
@@ -23,6 +26,7 @@ Object <- R6Class(
         warning = function(e) {
           e$message
         }
+        )
       )
 
       result
@@ -104,14 +108,14 @@ File <- R6Class(
       self$string <- path
       self$history_path <- history_path(path)
 
-      dir_create(path_dir(path), recursive = TRUE)
+      dir_create(path_workflow(fs::path_dir(path)), recursive = TRUE)
     },
     valid = function(design) {
-      validate(file_exists(self$path), "File exists")
+      validate(fs::file_exists(path_workflow(self$path)), "File exists")
       super$valid()
     },
     read_history = function() {
-      jsonlite::read_json(self$history_path, simplifyVector = TRUE)
+      jsonlite::read_json(path_workflow(self$history_path), simplifyVector = TRUE)
     },
     write_history = function(...) {
       history <- list(
@@ -119,11 +123,17 @@ File <- R6Class(
         modification_time = self$modification_time
       )
       history <- list_modify(history, ...)
-      jsonlite::write_json(history, history_path(self$path))
+      jsonlite::write_json(history, path_workflow(history_path(self$path)))
     },
     delete = function() {
-      if (file_exists(self$path) && is_file(self$path)) file_delete(self$path)
-      if (self$exists_history) file_delete(history_path(self$path))
+      if (
+        fs::file_exists(path_workflow(self$path)) &&
+        fs::is_file(path_workflow(self$path))
+      ) {
+        fs::file_delete(path_workflow(self$path))
+      }
+
+      if (self$exists_history) file_delete(path_workflow(history_path(self$path)))
     }
   ),
   active = list(
@@ -146,19 +156,19 @@ File <- R6Class(
       }
 
       if (is.null(digest)) {
-        digest <- processx::run("md5sum", path)$stdout %>% gsub("([^ ]*).*", "\\1", .) %>% trimws()
+        digest <- processx::run("md5sum", path_workflow(path))$stdout %>% gsub("([^ ]*).*", "\\1", .) %>% trimws()
       }
 
       digest
     },
     modification_time = function() {
-      fs::file_info(self$path)$modification_time
+      fs::file_info(path_workflow(self$path))$modification_time
     },
     exists = function() {
-      file_exists(self$path)
+      fs::file_exists(path_workflow(self$path))
     },
     exists_history = function() {
-      file_exists(self$history_path)
+      fs::file_exists(path_workflow(self$history_path))
     }
   )
 )
@@ -168,13 +178,14 @@ DerivedFile <- R6Class(
   inherit = File,
   public = list(
     initialize = function(path) {
-      # add derived file directory to path if defined
+      # add derived file directory to path if defined (when using modules)
+      # TODO: change this to a more clear "module_derived_directory" option
       path <- fs::path(getOption("derived_file_directory", default = "./"), path)
 
       super$initialize(path)
 
       # check the history if the derived file already exists
-      if (file_exists(self$path)) {
+      if (fs::file_exists(path_workflow(self$path))) {
         if(!self$exists_history) {
           cat_line(crayon_warning("\U26A0 No history present for derived file:",  crayon::italic(self$path), ", deleting the file."))
           self$delete()
@@ -212,22 +223,23 @@ RawFile <- R6Class(
   inherit = File,
   public = list(
     initialize = function(path) {
-      # add workflow directory to path if defined
+      # add workflow directory to path if defined (when using modules)
+      # TODO: change this to a more clear "module_raw_directory" option
       path <- fs::path(getOption("workflow_directory", default = "./"), path)
 
       super$initialize(path)
 
       # check if raw file exists
-      if (!file_exists(path)) {
+      if (!file_exists(path_workflow(path))) {
         stop("\U274C Raw file does not exist: ",  crayon::italic(path))
       }
 
       # if the file is not within the current working directory, place it in the .certigo folder
       # as to make sure it gets mounted inside containers
       if (!path_is_child(path, ".")) {
-        new_path <- paste0(".certigo/files/", self$digest)
-        if (!fs::file_exists(new_path)) {
-          fs::dir_create(fs::path_dir(new_path), recursive = TRUE)
+        new_path <- path_workflow(".certigo/files/", self$digest)
+        if (!fs::file_exists(path_workflow(new_path))) {
+          fs::dir_create(path_workflow(fs::path_dir(new_path)), recursive = TRUE)
           fs::file_copy(
             path,
             new_path
@@ -280,7 +292,7 @@ DerivedDirectory <- R6Class(
   public = list(
     initialize = function(path) {
       # make sure the path of this folder ends with "/." so that fs::path_dir will retain the directory
-      path <- paste0(fs::path_norm(path), "/.")
+      path <- fs::path(fs::path_norm(path), "/.")
       super$initialize(path)
     }
   ),
@@ -289,13 +301,13 @@ DerivedDirectory <- R6Class(
       # very dirt way to get a "digest" of a path
       # we should actually look at file contents here...
       # https://unix.stackexchange.com/questions/35832/how-do-i-get-the-md5-sum-of-a-directorys-contents-as-one-sum
-      fs::dir_info(path, recursive = TRUE) %>%
+      fs::dir_info(path_workflow(path), recursive = TRUE) %>%
         select(path, size) %>%
         arrange(size) %>%
         digest::digest("md5")
     },
     modification_time = function() {
-      fs::dir_info(path, recursive = TRUE) %>%
+      fs::dir_info(path_workflow(path), recursive = TRUE) %>%
         pull(modification_time) %>%
         max()
     }
@@ -332,9 +344,9 @@ Parameters <- R6Class(
       self$id <- digest <- self$digest
 
       parameters_file <- paste0("./.certigo/parameters/", digest)
-      if (!file.exists(parameters_file)) {
-        dir_create(path_dir(parameters_file), recursive = TRUE)
-        jsonlite::write_json(parameters, parameters_file)
+      if (!fs::file_exists(path_workflow(parameters_file))) {
+        dir_create(path_workflow(path_dir(parameters_file)), recursive = TRUE)
+        jsonlite::write_json(parameters, path_workflow(parameters_file))
       }
       self$string <- parameters_file
     }
@@ -412,12 +424,6 @@ ObjectSet <- R6Class(
 
       self$id <- digest::digest(object_strings, algo = "md5")
       self$string <- object_strings
-      # object_set_file <- paste0("./.certigo/object_sets/", self$id)
-      # if (!file.exists(object_set_file)) {
-      #   dir_create(path_dir(object_set_file), recursive = TRUE)
-      #   jsonlite::write_json(object_strings, object_set_file)
-      # }
-      # self$string <- object_set_file
     }
   ),
   active = list(
@@ -437,6 +443,6 @@ ObjectSet <- R6Class(
 object_set <- ObjectSet$new
 
 
-path_is_child <- function(path, start = ".") {
-  startsWith(fs::path_abs(path), fs::path_real(start))
+path_is_child <- function(path, root = get_object_root()) {
+  path_has_parent(path, root)
 }

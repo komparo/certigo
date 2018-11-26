@@ -13,5 +13,3 @@ get_call <- function(
     outputs = exprs(animal_cuteness_tests)
   )
 }
-
-

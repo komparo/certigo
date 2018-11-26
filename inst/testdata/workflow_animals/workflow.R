@@ -24,13 +24,14 @@ design <- tibble(
     parameters = dynutils::mapdf(., parameters),
     script = list(script_file("scripts/determine_animal_cuteness.R")),
     executor = list(docker_executor(container = "rocker/tidyverse")),
-    animal_cuteness = str_glue("derived/animal_cuteness/{animal}.csv") %>% map(derived_file)
+    animal_cuteness = str_glue("derived/animal_cuteness/{animal}.csv") %>% map(derived_file),
+    resources = str_glue("derived/animal_cuteness/{animal}_resources.json") %>% map(derived_file)
   )
 
 determine_animal_cuteness <- rscript_call(
   "determine_animal_cuteness",
   design = design,
-  inputs = exprs(parameters, script, executor),
+  inputs = exprs(parameters, script),
   outputs = exprs(animal_cuteness)
 )
 
@@ -51,10 +52,11 @@ plot_animal_cuteness <- rscript_call(
     select(animal_cuteness) %>%
     mutate(
       script = list(script_file("scripts/plot_animal_cuteness.R")),
-      plot = list(derived_file("results/animal_cuteness.pdf"))
+      plot = list(derived_file("results/animal_cuteness.pdf")),
+      resources = list(derived_file("results/plotting_resources.json"))
     ),
   inputs = exprs(script, animal_cuteness),
-  outputs = exprs(plot)
+  outputs = exprs(plot, resources)
 )
 
 test_animal_cuteness <- load_call(
@@ -98,7 +100,6 @@ always_error <- rscript_call(
   outputs = exprs(plot)
 )
 
-
 plotting <- call_collection(
   "plotting",
   plot_animal_cuteness,
@@ -113,5 +114,5 @@ animal_workflow <- workflow(
   overview
 )
 
-animal_workflow$plot()
+# animal_workflow$plot()
 
