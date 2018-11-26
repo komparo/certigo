@@ -2,6 +2,13 @@ context("Testing different executors")
 
 source(system.file("testdata/workflow_animals/setup.R", package = "certigo"))
 
+certigo_tmp_file <- function() {
+  if(!fs::dir_exists(path_workflow(".certigo/tmp"))) {
+    fs::dir_create(path_workflow(".certigo/tmp"))
+  }
+  tempfile(tmpdir = ".certigo/tmp")
+}
+
 test_that("ProcessExecutor", {
   resources_file <- certigo_tmp_file()
   executor <- ProcessExecutor$new()
