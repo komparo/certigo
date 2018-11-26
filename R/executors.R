@@ -168,17 +168,11 @@ DockerExecutor <- R6Class(
       # for docker, this requires that /usr/bin/time is installed (https://packages.debian.org/jessie/time)
       # this is usually not the case (e.g. ubuntu, debian, ...)
       if (!is.null(resources_file) && is.character(resources_file)) {
-        # extra checks to make sure the correct resource_file is given:
-        # - character
-        # - descendant of the current directory, becuase this will be mounted
-        if (is.character(resources_file) && fs::path_has_parent(resources_file, ".")) {
-          private$resources_file <- resources_file
-          wrapped <- wrap_command_resources(command, args, private$resources_file)
-          command <- wrapped$command
-          args <- wrapped$args
-        } else {
-          stop("Invalid resources file")
-        }
+        if (!is.character(resources_file)) stop("Invalid resources file")
+        private$resources_file <- resources_file
+        wrapped <- wrap_command_resources(command, args, private$resources_file)
+        command <- wrapped$command
+        args <- wrapped$args
       }
 
       # create a random name for the container
