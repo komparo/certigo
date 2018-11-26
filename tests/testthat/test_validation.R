@@ -23,5 +23,5 @@ write_csv(
   path_workflow("animal_cuteness.csv")
 )
 
-testthat::expect_error(object$valid(), "When wrong format, valid should error")
+testthat::expect_error(object$valid(), info = "When wrong format, valid should error")
 testthat::expect_true(is.character(object$validate()), "When wrong format, validate should return chracter")
