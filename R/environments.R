@@ -1,12 +1,10 @@
-#' Executors
+#' Environments
 #'
 #' @param ... Other parameters
 #'
-#' @rdname executor
-
-
-Executor <- R6Class(
-  "Executor",
+#' @rdname environment
+Environment <- R6Class(
+  "Environment",
   inherit = Object,
   list(
     initialize = function() stop(),
@@ -30,9 +28,9 @@ Executor <- R6Class(
   )
 )
 
-ProcessExecutor <- R6Class(
-  "ProcessExecutor",
-  inherit = Executor,
+ProcessEnvironment <- R6Class(
+  "ProcessEnvironment",
+  inherit = Environment,
   public = list(
     process = NULL,
     initialize = function() {},
@@ -104,9 +102,9 @@ ProcessExecutor <- R6Class(
 
 
 
-LocalExecutor <- R6Class(
-  "LocalExecutor",
-  inherit = ProcessExecutor,
+LocalEnvironment <- R6Class(
+  "LocalEnvironment",
+  inherit = ProcessEnvironment,
   list(
     id = "local"
   ),
@@ -116,15 +114,15 @@ LocalExecutor <- R6Class(
   )
 )
 
-#' @rdname executor
+#' @rdname environment
 #' @export
-local_executor <- LocalExecutor$new
+local_environment <- LocalEnvironment$new
 
 
 
-DockerExecutor <- R6Class(
-  "DockerExecutor",
-  inherit = ProcessExecutor,
+DockerEnvironment <- R6Class(
+  "DockerEnvironment",
+  inherit = ProcessEnvironment,
   public = list(
     container = NULL,
     user_id = "1000",
@@ -186,6 +184,6 @@ DockerExecutor <- R6Class(
   )
 )
 
-#' @rdname executor
+#' @rdname environment
 #' @export
-docker_executor <- DockerExecutor$new
+docker_environment <- DockerEnvironment$new

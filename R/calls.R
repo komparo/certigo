@@ -12,7 +12,7 @@ Call <- R6Class(
     inputs = NULL,
     outputs = NULL,
     design = NULL,
-    executor = NULL,
+    environment = NULL,
     command = NULL,
     args = NULL,
     cached = FALSE,
@@ -34,11 +34,11 @@ Call <- R6Class(
         testthat::expect_equal(nrow(inputs), nrow(design))
       }
 
-      # add default executor if not present in inputs
-      if (!"executor" %in% names(inputs)) {
-        inputs$executor <- get_default_executor()
+      # add default environment if not present in inputs
+      if (!"environment" %in% names(inputs)) {
+        inputs$environment <- get_default_environment()
       }
-      self$executor <- inputs$executor$clone()
+      self$environment <- inputs$environment$clone()
 
       # add inputs & outputs to self
       self$inputs <- inputs
@@ -75,8 +75,8 @@ Call <- R6Class(
         cat_line(col_split(crayon_ok("\U23F0 Cached"), self$id))
         self$cached <- TRUE
       } else {
-        # start the executor
-        self$executor$start(self$command, self$args, resources_file = self$outputs$resources$string)
+        # start the environment
+        self$environment$start(self$command, self$args, resources_file = self$outputs$resources$string)
         cat_line(col_split(crayon_info("\U25BA Started"), self$id))
         self$cached <- FALSE
       }
@@ -87,15 +87,15 @@ Call <- R6Class(
     },
     wait = function() {
       if (!self$cached) {
-        self$executor$wait()
+        self$environment$wait()
 
         # Check whether the process successfully finished
-        if (self$executor$status %in% c("success")) {
+        if (self$environment$status %in% c("success")) {
           # do nothing
-        } else if (self$executor$status %in% c("errored")) {
+        } else if (self$environment$status %in% c("errored")) {
           cat_line(col_split(crayon_error("\U274C Errored"), self$id))
           map(self$outputs, "delete") %>% invoke_map()
-          cat_line(self$executor$error %>% tail(10))
+          cat_line(self$environment$error %>% tail(10))
           stop(crayon_error("Process errored"), call. = FALSE)
         } else {
           stop("Process neither did not success nor error, was it started?")
@@ -130,12 +130,12 @@ Call <- R6Class(
           output$write_history(call_digest = self$digest)
         })
 
-        # cleanup the executor
-        self$executor$stop()
+        # cleanup the environment
+        self$environment$stop()
       }
     },
     reset = function() {
-      self$executor$reset()
+      self$environment$reset()
       self$cached <- FALSE
     }
   ),
@@ -148,7 +148,7 @@ Call <- R6Class(
       if (self$cached) {
         "cached"
       } else {
-        self$executor$status
+        self$environment$status
       }
     }
   )
@@ -181,8 +181,8 @@ RscriptCall <- R6Class(
       super$initialize(id, inputs, outputs, design)
 
       # get input and output strings
-      # first filter the script and executor out
-      input_strings <- self$inputs[-which(names(self$inputs) %in% c("script", "executor"))] %>% map("string")
+      # first filter the script and environment out
+      input_strings <- self$inputs[-which(names(self$inputs) %in% c("script", "environment"))] %>% map("string")
       output_strings <- self$outputs %>% map("string")
 
       fs::dir_create(path_workflow(".certigo/object_sets"), recursive = TRUE)

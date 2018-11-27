@@ -22,14 +22,14 @@ test_that("Rscript calls", {
 
   expect_rerun(call$start_and_wait())
 
-  # with docker executor and resources
+  # with docker environment and resources
   call <- rscript_call(
     "rnorm",
     design = c(design, list(
-      executor = docker_executor(container = "certigo/animal_cuteness"),
+      environment = docker_environment(container = "certigo/animal_cuteness"),
       resources = derived_file("derived/resources.json")
     )),
-    inputs = exprs(script, n, executor),
+    inputs = exprs(script, n, environment),
     outputs = exprs(sample, resources)
   )
 
@@ -38,15 +38,15 @@ test_that("Rscript calls", {
   resources <- jsonlite::read_json(path_workflow(call$design$resources[[1]]$path))
   expect_true(is.list(resources))
 
-  # with default executor
-  options(certigo_executor = local_executor())
+  # with default environment
+  options(certigo_environment = local_environment())
   call <- rscript_call(
     "rnorm",
     design = design,
     inputs = exprs(script, n),
     outputs = exprs(sample)
   )
-  expect_is(call$calls[[1]]$executor, "LocalExecutor")
+  expect_is(call$calls[[1]]$environment, "LocalEnvironment")
   expect_rerun(call$start_and_wait())
 
   # output does not exist

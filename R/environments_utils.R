@@ -10,6 +10,6 @@ wrap_command_resources <- function(command, args, resources_file) {
 
 
 
-get_default_executor <- function() {
-  getOption("certigo_executor", default = docker_executor("rocker/tidyverse"))
+get_default_environment <- function() {
+  getOption("certigo_environment", default = docker_environment("rocker/tidyverse"))
 }

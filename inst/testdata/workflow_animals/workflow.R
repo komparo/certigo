@@ -53,9 +53,9 @@ plot_animal_cuteness <- rscript_call(
       script = list(script_file("scripts/plot_animal_cuteness.R")),
       plot = list(derived_file("results/animal_cuteness.pdf")),
       resources = list(derived_file("results/plotting_resources.json")),
-      executor = list(docker_executor(container = "certigo/animal_cuteness"))
+      environment = list(docker_environment(container = "certigo/animal_cuteness"))
     ),
-  inputs = exprs(script, animal_cuteness, executor),
+  inputs = exprs(script, animal_cuteness, environment),
   outputs = exprs(plot, resources)
 )
 
@@ -82,10 +82,10 @@ overview <- rmd_call(
   "overview",
   design = list(
     script = script_file("scripts/overview.Rmd"),
-    executor = docker_executor("rocker/tidyverse"),
+    environment = docker_environment("rocker/tidyverse"),
     rendered = derived_file("results/overview.html")
   ),
-  inputs = exprs(script, executor),
+  inputs = exprs(script, environment),
   outputs = exprs(rendered)
 )
 
