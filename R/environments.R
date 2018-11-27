@@ -8,17 +8,9 @@ Environment <- R6Class(
   inherit = Object,
   list(
     initialize = function() stop(),
-    start = function() stop(),
-    wait = function() stop(),
-    start_and_wait = function() {
-      self$start()
-      self$wait()
-    },
-    stop = function() stop(),
-    error = NULL,
-    output = NULL,
+    encapsulate = function() stop(),
     string = "",
-    time = NULL
+    id = "environment"
   ),
   private = list(
     resources_file = NULL
@@ -28,13 +20,13 @@ Environment <- R6Class(
   )
 )
 
-ProcessEnvironment <- R6Class(
-  "ProcessEnvironment",
+LocalEnvironment <- R6Class(
+  "LocalEnvironment",
   inherit = Environment,
   public = list(
     process = NULL,
     initialize = function() {},
-    start = function(command, args, resources_file = NULL) {
+    encapsulate = function(command, args, resources_file = NULL) {
       if (command == "R") {command <- paste0(Sys.getenv("R_HOME"), "/bin/R")} # fix for R CMD check which apparently does not allow running R in processx without running it in R home
 
       # resources
@@ -52,16 +44,9 @@ ProcessEnvironment <- R6Class(
         }
       }
 
-      # process
-      self$process <- processx::process$new(
+      lst(
         command,
-        args,
-        stdout = "|",
-        stderr = "|",
-        supervise = TRUE,
-        cleanup = TRUE,
-        cleanup_tree = TRUE,
-        wd = path_workflow()
+        args
       )
     },
     wait = function() {
@@ -83,7 +68,8 @@ ProcessEnvironment <- R6Class(
     },
     reset = function() {
       self$process <- NULL
-    }
+    },
+    id = "local"
   ),
   active = list(
     status = function() {
@@ -96,19 +82,7 @@ ProcessEnvironment <- R6Class(
       } else {
         "success"
       }
-    }
-  )
-)
-
-
-
-LocalEnvironment <- R6Class(
-  "LocalEnvironment",
-  inherit = ProcessEnvironment,
-  list(
-    id = "local"
-  ),
-  active = list(
+    },
     digest = function(...) "local",
     exists = function(...) TRUE
   )
@@ -122,7 +96,7 @@ local_environment <- LocalEnvironment$new
 
 DockerEnvironment <- R6Class(
   "DockerEnvironment",
-  inherit = ProcessEnvironment,
+  inherit = LocalEnvironment,
   public = list(
     container = NULL,
     user_id = "1000",
@@ -144,7 +118,7 @@ DockerEnvironment <- R6Class(
       private$exists_cached <- digest != ""
       private$digest_cached <- digest
     },
-    start = function(command, args, resources_file = FALSE) {
+    encapsulate = function(command, args, resources_file = FALSE) {
       # check whether resources are requested
       # for docker, this requires that /usr/bin/time is installed (https://packages.debian.org/jessie/time)
       # this is usually not the case (e.g. ubuntu, debian, ...)
@@ -171,7 +145,11 @@ DockerEnvironment <- R6Class(
         args
       )
       command <- "docker"
-      super$start(command, args, resources = NULL)
+
+      lst(
+        command,
+        args
+      )
     }
   ),
   private = list(

@@ -13,3 +13,4 @@ wrap_command_resources <- function(command, args, resources_file) {
 get_default_environment <- function() {
   getOption("certigo_environment", default = docker_environment("rocker/tidyverse"))
 }
+

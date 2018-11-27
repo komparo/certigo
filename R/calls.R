@@ -13,10 +13,12 @@ Call <- R6Class(
     outputs = NULL,
     design = NULL,
     environment = NULL,
+    scheduler = NULL,
+    job_id = NULL,
     command = NULL,
     args = NULL,
     cached = FALSE,
-    initialize = function(id, inputs, outputs, design = NULL) {
+    initialize = function(id, inputs, outputs, design = NULL, scheduler = local_scheduler()) {
       self$id <- id
 
       # check inputs and outputs ----------------------
@@ -38,7 +40,8 @@ Call <- R6Class(
       if (!"environment" %in% names(inputs)) {
         inputs$environment <- get_default_environment()
       }
-      self$environment <- inputs$environment$clone()
+
+      self$scheduler <- scheduler
 
       # add inputs & outputs to self
       self$inputs <- inputs
@@ -65,9 +68,6 @@ Call <- R6Class(
       output_call_digests <- map(self$outputs, "call_digest")
       call_digest <- self$digest
 
-      # check whether resources output is requested
-      resources_requested <- "resources" %in% names(self$outputs)
-
       # choose between cached or actual execution
       # if an output is not present, its call digest will be NULL, which will always trigger a rerun
       if(all(!is.na(output_call_digests)) && all(map_lgl(output_call_digests, identical, y = call_digest))) {
@@ -75,8 +75,13 @@ Call <- R6Class(
         cat_line(col_split(crayon_ok("\U23F0 Cached"), self$id))
         self$cached <- TRUE
       } else {
-        # start the environment
-        self$environment$start(self$command, self$args, resources_file = self$outputs$resources$string)
+        # start the job
+        self$job_id <- self$scheduler$start(
+          self$command,
+          self$args,
+          environment = self$inputs$environment,
+          resources_file = self$outputs$resources$string
+        )
         cat_line(col_split(crayon_info("\U25BA Started"), self$id))
         self$cached <- FALSE
       }
@@ -87,15 +92,14 @@ Call <- R6Class(
     },
     wait = function() {
       if (!self$cached) {
-        self$environment$wait()
+        job <- self$scheduler$wait(self$job_id)
 
-        # Check whether the process successfully finished
-        if (self$environment$status %in% c("success")) {
+        if (job$status == c("success")) {
           # do nothing
-        } else if (self$environment$status %in% c("errored")) {
+        } else if (job$status == "errored") {
           cat_line(col_split(crayon_error("\U274C Errored"), self$id))
           map(self$outputs, "delete") %>% invoke_map()
-          cat_line(self$environment$error %>% tail(10))
+          cat_line(job$error %>% tail(10))
           stop(crayon_error("Process errored"), call. = FALSE)
         } else {
           stop("Process neither did not success nor error, was it started?")
@@ -129,13 +133,9 @@ Call <- R6Class(
         walk(self$outputs, function(output) {
           output$write_history(call_digest = self$digest)
         })
-
-        # cleanup the environment
-        self$environment$stop()
       }
     },
     reset = function() {
-      self$environment$reset()
       self$cached <- FALSE
     }
   ),
@@ -148,7 +148,7 @@ Call <- R6Class(
       if (self$cached) {
         "cached"
       } else {
-        self$environment$status
+        self$scheduler$status(self$job_id)
       }
     }
   )
@@ -181,7 +181,7 @@ RscriptCall <- R6Class(
       super$initialize(id, inputs, outputs, design)
 
       # get input and output strings
-      # first filter the script and environment out
+      # first filter the script and environment
       input_strings <- self$inputs[-which(names(self$inputs) %in% c("script", "environment"))] %>% map("string")
       output_strings <- self$outputs %>% map("string")
 

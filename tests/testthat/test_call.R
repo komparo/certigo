@@ -46,7 +46,7 @@ test_that("Rscript calls", {
     inputs = exprs(script, n),
     outputs = exprs(sample)
   )
-  expect_is(call$calls[[1]]$environment, "LocalEnvironment")
+  expect_is(call$calls[[1]]$inputs$environment, "LocalEnvironment")
   expect_rerun(call$start_and_wait())
 
   # output does not exist
