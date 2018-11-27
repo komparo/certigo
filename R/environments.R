@@ -11,12 +11,6 @@ Environment <- R6Class(
     encapsulate = function() stop(),
     string = "",
     id = "environment"
-  ),
-  private = list(
-    resources_file = NULL
-  ),
-  active = list(
-    status = function() stop()
   )
 )
 
@@ -49,40 +43,9 @@ LocalEnvironment <- R6Class(
         args
       )
     },
-    wait = function() {
-      if(!is.null(self$process)) {
-        self$process$wait()
-        self$stop()
-
-      } else {
-        # process was not started, just return nothing
-      }
-      invisible()
-    },
-    stop = function() {
-      # read in the output and error
-      self$output <- self$process$read_all_output_lines()
-      self$error <- self$process$read_all_error_lines()
-
-      self$process$kill_tree()
-    },
-    reset = function() {
-      self$process <- NULL
-    },
     id = "local"
   ),
   active = list(
-    status = function() {
-      if(is.null(self$process)) {
-        "waiting"
-      } else if (self$process$is_alive()) {
-        "running"
-      } else if(self$process$get_exit_status() > 0) {
-        "errored"
-      } else {
-        "success"
-      }
-    },
     digest = function(...) "local",
     exists = function(...) TRUE
   )
