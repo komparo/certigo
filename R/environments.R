@@ -29,8 +29,7 @@ LocalEnvironment <- R6Class(
         # - character
         # - descendant of the current directory, becuase this will be mounted
         if (is.character(resources_file) && fs::path_has_parent(resources_file, ".")) {
-          private$resources_file <- resources_file
-          wrapped <- wrap_command_resources(command, args, private$resources_file)
+          wrapped <- wrap_command_resources(command, args, resources_file)
           command <- wrapped$command
           args <- wrapped$args
         } else {
@@ -87,8 +86,7 @@ DockerEnvironment <- R6Class(
       # this is usually not the case (e.g. ubuntu, debian, ...)
       if (!is.null(resources_file) && is.character(resources_file)) {
         if (!is.character(resources_file)) stop("Invalid resources file")
-        private$resources_file <- resources_file
-        wrapped <- wrap_command_resources(command, args, private$resources_file)
+        wrapped <- wrap_command_resources(command, args, resources_file)
         command <- wrapped$command
         args <- wrapped$args
       }

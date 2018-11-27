@@ -17,11 +17,11 @@ test_that("LocalScheduler + LocalEnvironment", {
   environment <- local_environment()
 
   # normal execution
-  expect_true(scheduler$status(NULL) == "waiting")
+  expect_true(scheduler$status(NULL) == "pending")
   job_id <- scheduler$start("sleep", "0.5", environment = environment)
   expect_true(scheduler$status(job_id) == "running")
   output <- scheduler$wait(job_id)
-  expect_true(output$status == "success")
+  expect_true(output$status == "succeeded")
 
   # with resource file
   resources_file <- certigo_tmp_file()
@@ -34,11 +34,11 @@ test_that("LocalScheduler + DockerEnvironment", {
   environment <- docker_environment()
 
   # normal execution
-  expect_true(scheduler$status(NULL) == "waiting")
+  expect_true(scheduler$status(NULL) == "pending")
   job_id <- scheduler$start("sleep", "0.5", environment = environment)
   expect_true(scheduler$status(job_id) == "running")
   output <- scheduler$wait(job_id)
-  expect_true(output$status == "success")
+  expect_true(output$status == "succeeded")
 
   # with resource file
   resources_file <- certigo_tmp_file()
@@ -52,6 +52,6 @@ test_that("LocalScheduler + DockerEnvironment", {
   expect_equal(environment$digest, "")
   job_id <- scheduler$start("sleep", "0.5", environment = environment)
   output <- scheduler$wait(job_id)
-  expect_true(output$status == "errored")
+  expect_true(output$status == "failed")
   expect_true(first(nchar(output$error)) > 0)
 })

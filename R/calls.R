@@ -95,9 +95,9 @@ Call <- R6Class(
       if (!self$cached) {
         self$job <- self$scheduler$wait(self$job_id)
 
-        if (self$job$status == c("success")) {
+        if (self$job$status == c("succeeded")) {
           # do nothing
-        } else if (self$job$status == "errored") {
+        } else if (self$job$status == "failed") {
           cat_line(col_split(crayon_error("\U274C Errored"), self$id))
           map(self$outputs, "delete") %>% invoke_map()
           cat_line(self$job$error %>% tail(10))
