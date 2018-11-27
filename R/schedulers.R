@@ -76,9 +76,21 @@ LocalScheduler <- R6::R6Class(
 )
 
 #' Local scheduler
+#'
+#' There is always only one local scheduler, also available as an option "certigo_local_scheduler"
+#'
 #' @export
 #' @param ... ...
-local_scheduler <- LocalScheduler$new
+local_scheduler <- function(...) {
+  getOption(
+    "certigo_local_scheduler",
+    {
+      scheduler <- LocalScheduler$new(...)
+      options(certigo_local_scheduler = scheduler)
+      scheduler
+    }
+  )
+}
 
 
 
