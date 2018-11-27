@@ -15,10 +15,11 @@ Call <- R6Class(
     environment = NULL,
     scheduler = NULL,
     job_id = NULL,
+    job = NULL,
     command = NULL,
     args = NULL,
     cached = FALSE,
-    initialize = function(id, inputs, outputs, design = NULL, scheduler = local_scheduler()) {
+    initialize = function(id, inputs, outputs, design = NULL, scheduler = get_default_scheduler()) {
       self$id <- id
 
       # check inputs and outputs ----------------------
@@ -92,14 +93,14 @@ Call <- R6Class(
     },
     wait = function() {
       if (!self$cached) {
-        job <- self$scheduler$wait(self$job_id)
+        self$job <- self$scheduler$wait(self$job_id)
 
-        if (job$status == c("success")) {
+        if (self$job$status == c("success")) {
           # do nothing
-        } else if (job$status == "errored") {
+        } else if (self$job$status == "errored") {
           cat_line(col_split(crayon_error("\U274C Errored"), self$id))
           map(self$outputs, "delete") %>% invoke_map()
-          cat_line(job$error %>% tail(10))
+          cat_line(self$job$error %>% tail(10))
           stop(crayon_error("Process errored"), call. = FALSE)
         } else {
           stop("Process neither did not success nor error, was it started?")
@@ -147,6 +148,8 @@ Call <- R6Class(
     status = function(...) {
       if (self$cached) {
         "cached"
+      } else if (!is.null(self$job)) {
+        self$job$status
       } else {
         self$scheduler$status(self$job_id)
       }
