@@ -67,6 +67,9 @@ LocalScheduler <- R6::R6Class(
 
       process$kill_tree()
 
+      # garbage collect process
+      private$processes[[job_id]] <- NULL
+
       output
     }
   ),
