@@ -33,7 +33,8 @@ Imports:
   tibble,
   tidygraph,
   tidyr,
-  withr
+  withr,
+  yaml
 Suggests: 
   ggraph,
   extrafont,

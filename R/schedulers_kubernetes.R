@@ -100,7 +100,7 @@ generate_kubernetes_config <- function(container, command, args, host_path) {
     stop("For kubernetes, workflow directory has to be child of home directory")
   }
 
-  host_path <- host_path %>% gsub("/home/", "/hosthome/", .)
+  host_path <- host_path %>% str_replace_all("/home/", "/hosthome/")
 
   config <- list(
     apiVersion = "batch/v1",
