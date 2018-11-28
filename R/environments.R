@@ -80,7 +80,7 @@ DockerEnvironment <- R6Class(
       private$exists_cached <- digest != ""
       private$digest_cached <- digest
     },
-    encapsulate = function(command, args, resources_file = FALSE) {
+    encapsulate = function(command, args, resources_file = FALSE, encapsulate_container = TRUE) {
       # check whether resources are requested
       # for docker, this requires that /usr/bin/time is installed (https://packages.debian.org/jessie/time)
       # this is usually not the case (e.g. ubuntu, debian, ...)
@@ -91,21 +91,23 @@ DockerEnvironment <- R6Class(
         args <- wrapped$args
       }
 
-      # create a random name for the container
-      self$tag <- tempfile(tmpdir = "") %>% str_sub(2)
+      if (encapsulate_container) {
+        # create a random name for the container
+        self$tag <- tempfile(tmpdir = "") %>% str_sub(2)
 
-      args <- c(
-        "run",
-        "-v", glue::glue("{fs::path_abs(path_workflow())}:/data"),
-        "-w", "/data",
-        "--rm",
-        "-u", self$user_id,
-        "--name", self$tag,
-        self$container,
-        command,
-        args
-      )
-      command <- "docker"
+        args <- c(
+          "run",
+          "-v", glue::glue("{fs::path_abs(path_workflow())}:/data"),
+          "-w", "/data",
+          "--rm",
+          "-u", self$user_id,
+          "--name", self$tag,
+          self$container,
+          command,
+          args
+        )
+        command <- "docker"
+      }
 
       lst(
         command,

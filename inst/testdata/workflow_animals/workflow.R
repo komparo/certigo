@@ -53,7 +53,7 @@ plot_animal_cuteness <- rscript_call(
       script = list(script_file("scripts/plot_animal_cuteness.R")),
       plot = list(derived_file("results/animal_cuteness.pdf")),
       resources = list(derived_file("results/plotting_resources.json")),
-      environment = list(docker_environment(container = "certigo/animal_cuteness"))
+      environment = list(docker_environment(container = "certigo/workflow_animals"))
     ),
   inputs = exprs(script, animal_cuteness, environment),
   outputs = exprs(plot, resources)

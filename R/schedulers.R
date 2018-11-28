@@ -16,7 +16,7 @@ LocalScheduler <- R6::R6Class(
   inherit = Scheduler,
   public = list(
     initialize = function() {},
-    start = function(command, args, environment = local_environment(), resources_file = NULL) {
+    start = function(command, args = character(), environment = local_environment(), resources_file = NULL) {
       encapsulated <- environment$encapsulate(command, args, resources_file = resources_file)
 
       # process
@@ -32,7 +32,7 @@ LocalScheduler <- R6::R6Class(
       )
 
       job_id <- as.character(length(private$processes) + 1)
-      private$processes <- c(private$processes, set_names(list(process), job_id))
+      private$processes[[job_id]] <- process
 
       job_id
     },
@@ -94,72 +94,3 @@ local_scheduler <- function(...) {
     }
   )
 }
-
-
-
-
-
-
-
-KubernetesScheduler <- R6::R6Class(
-  "KubernetesScheduler",
-  public = list(
-    initialize = function() {
-
-    },
-    start = function(command, args, environment) {
-
-    }
-  )
-)
-
-#' Kubernetes scheduler
-#' @export
-#' @param ... ...
-kubernetes_scheduler <- KubernetesScheduler$new
-
-#
-#
-# config_path <- tempfile()
-#
-#
-#
-# list(
-#   apiVersion = "batch/v1",
-#   kind = "Job",
-#   metadata = list(
-#     name = "pi"
-#   ),
-#   spec = list(
-#     template = list(
-#       spec = list(
-#         containers = list(
-#           list(
-#             name = "pi",
-#             image = "perl",
-#             command = c("perl",  "-Mbignum=bpi", "-wle", "print bpi(2000)")
-#           )
-#         ),
-#         restartPolicy = "Never"
-#       )
-#     ),
-#     backoffLimit = 4
-#   )
-# ) %>% yaml::write_yaml(config_path)
-#
-#
-# glue::glue("kubectl create -f {config_path}") %>% clipr::write_clip()
-#
-# system(glue::glue("kubectl create -f {config_path}"))
-#
-#
-# pod_id <- system("kubectl get pods --selector=job-name=pi --output=jsonpath={.items..metadata.name}", intern = TRUE)
-#
-# wat <- jsonlite::fromJSON(system(glue::glue("kubectl get pods {pod_id} --output=json"), intern = T))
-# status <- tolower(wat$status$phase)
-#
-# if (status == "unknown") {
-#   stop(glue::glue("Status of pod '{pod_id}' is unknown, something went wrong"))
-# }
-#
-# system(glue::glue("kubectl delete pod,job {job_id}"))

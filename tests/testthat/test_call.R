@@ -26,7 +26,7 @@ test_that("Rscript calls", {
   call <- rscript_call(
     "rnorm",
     design = c(design, list(
-      environment = docker_environment(container = "certigo/animal_cuteness"),
+      environment = docker_environment(container = "certigo/workflow_animals"),
       resources = derived_file("derived/resources.json")
     )),
     inputs = exprs(script, n, environment),
