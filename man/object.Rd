@@ -3,7 +3,6 @@
 \docType{data}
 \name{Object}
 \alias{Object}
-\alias{docker}
 \alias{derived_file}
 \alias{raw_file}
 \alias{script_file}
@@ -15,8 +14,6 @@
 \format{An object of class \code{R6ClassGenerator} of length 24.}
 \usage{
 Object
-
-docker(...)
 
 derived_file(...)
 
