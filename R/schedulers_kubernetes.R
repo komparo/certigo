@@ -16,6 +16,8 @@ KubernetesScheduler <- R6::R6Class(
       )
 
       # create config
+      # TODO: the container should contain the hash which is available locally
+      # Otherwise, an outdated container could be used remotely
       config <- generate_kubernetes_config(
         container = environment$container,
         command = encapsulated$command,
