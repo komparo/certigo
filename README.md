@@ -16,8 +16,8 @@ A simple but powerful workflow manager.
   - Output validation: Checks whether the output is correct using
     standard or custom formats
   - Modular: Build a complex workflow from self-contained modules. Each
-    module is self-contained and can be tested independently
+    module is tested separately.
   - Easy development and debugging: Copies over a command that
     immediately enters the environment and script
-  - Resumable: Remembers the jobs that were started previously, and can
-    be resumed at any point
+  - Resumable: Remembers the jobs that were started previously, and the
+    workflow can thus be resumed at any point
